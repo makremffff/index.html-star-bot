@@ -242,21 +242,27 @@
     /*******************************
      * إعدادات ومتغيرات عامة
      *******************************/
-    const REQUIRED_ACTIVE_INVITES = 10;
-    const TASK_INVITES_PER_LEVEL = 50; // ثابت: عدد الدعوات المطلوبة لكل مستوى مهمة
+    // تم تحديث هذا الثابت ليعكس متطلبات الإحالة النشطة (20 إعلاناً)
+    const REQUIRED_ACTIVE_INVITES = 10; 
+    const TASK_INVITES_PER_LEVEL = 50; 
+    
+    // ثابت جديد: عدد الإعلانات التي يجب على المستخدم المُحال مشاهدتها ليعتبر 'Active'
+    const REQUIRED_ADS_TO_ACTIVATE_INVITE = 20; 
+
     const loaderEl = document.getElementById('loader');
     const loaderVideo = document.getElementById('loaderVideo');
     const bgVideo = document.getElementById('bgVideo');
+    const bgMusic = document.getElementById('bgMusic'); // يجب تشغيلها بناءً على تفاعل المستخدم
 
     const tg = window.Telegram?.WebApp || {};
     const tgUser = tg.initDataUnsafe?.user || null;
+    let lastClaimDateFromApi = null; // تخزين تاريخ آخر سحب من السيرفر
 
     /*******************************
      * دالة fetchApi موحدة
      *******************************/
     async function fetchApi({ type, data }) {
       try {
-        // نستخدم مسار api/index.js المفترض
         const res = await fetch('/api', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -279,8 +285,8 @@
       rose:  {id:4, en:'Rose', ar:'وردة', icon:'🌹', ads:350, inv:20,img:"https://giftgogame.com/static/thumbnails/5168103777563050263.webp",stars:25}
     };
     let myGifts = { bear:0, heart:0, box:0, rose:0 };
-    let myGiftDates = {}; // لا حاجة لتخزين كل التواريخ محليا، نعتمد على السيرفر لآخر تاريخ
-    let adCounters = {}; // يحتوي على عدد الإعلانات المتبقية
+    let myGiftDates = {}; 
+    let adCounters = {}; 
     let canClaim = { bear:false, heart:false, box:false, rose:false };
     let inviteStats = { total:0, active:0, pending:0 };
     let bearTaskLevel = 0;
@@ -393,7 +399,6 @@
         return window.show_10245709().then(() => true).catch(() => false);
       } else {
         // محاكاة لغرض الاختبار إذا لم يتم تحميل SDK
-        // يجب أن يتم إزالته عند النشر الفعلي
         return new Promise(resolve => setTimeout(() => resolve(true), 1200));
       }
     }
@@ -440,7 +445,6 @@
         }
 
         // --- Save to Server & Update State ---
-        // IMPORTANT: server expects giftId and userId
         const res = await fetchApi({ type: 'watch-ad', data: { giftId: key, userId } });
 
         if (!res.ok) {
@@ -448,8 +452,10 @@
           return;
         }
 
-        // الأهم: تحديث الحالة من السيرفر بعد تسجيل المشاهدة لضمان التزامن
+        // تحديث الحالة من السيرفر بعد تسجيل المشاهدة
         await loadUserState();
+        // تحديث إحصائيات الدعوات أيضاً للتأثير على حالة 'pending'
+        await updateInviteStats(); 
         renderGiftsRow();
         showToast('Ad views recorded and state refreshed.', 'success', 2200);
 
@@ -467,31 +473,29 @@
     }
 
     /*******************************
-     * يومين بين السحوبات
+     * يومين بين السحوبات (تعتمد على lastClaimDateFromApi)
      *******************************/
-    function daysBetween(d1, d2) {
-      const oneDay = 24 * 60 * 60 * 1000;
-      return Math.round(Math.abs((d2 - d1) / oneDay));
-    }
     function nextClaimAllowed() {
-      const lastClaim = localStorage.getItem('lastClaimDate');
-      if (!lastClaim) return true;
-      const last = new Date(lastClaim);
+      if (!lastClaimDateFromApi) return true;
+      const last = new Date(lastClaimDateFromApi);
       const now = new Date();
       // تحقق بالملي ثانية للتأكد من مرور 48 ساعة كاملة
       const diffHours = (now.getTime() - last.getTime()) / (60 * 60 * 1000);
-      return diffHours >= 48; // يجب الانتظار 48 ساعة
+      return diffHours >= 48; 
     }
+    
     function getRemainingTime() {
-      const lastClaim = localStorage.getItem('lastClaimDate');
-      if (!lastClaim) return '';
-      const last = new Date(lastClaim);
+      if (!lastClaimDateFromApi) return '';
+      const last = new Date(lastClaimDateFromApi);
       const now = new Date();
       const diffHours = (now.getTime() - last.getTime()) / (60 * 60 * 1000);
       
       if (diffHours >= 48) return '';
       
-      const remainingHours = Math.ceil(48 - diffHours);
+      const totalRemainingMillis = 48 * 60 * 60 * 1000 - (now.getTime() - last.getTime());
+
+      // تحويل المتبقي إلى أيام وساعات
+      const remainingHours = Math.ceil(totalRemainingMillis / (60 * 60 * 1000));
       const remainingDays = Math.floor(remainingHours / 24);
       const hours = remainingHours % 24;
       
@@ -511,7 +515,7 @@
         return;
       }
       if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites to claim.`, 'error');
+        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
         return;
       }
 
@@ -521,7 +525,7 @@
 
       if (!userId) { showToast('User not initialized. Please reopen the app.', 'error'); return; }
 
-      // IMPORTANT: server expects giftId and userId exactly
+      // طلب السحب
       const res = await fetchApi({ type: 'claim', data: { giftId: gift, userId } });
       
       if (!res.ok) {
@@ -549,7 +553,6 @@
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: `chat_id=${encodeURIComponent(CHAT_ID)}&text=${encodeURIComponent(msg)}`
         });
-        // لا حاجة للتحقق من الرد
       } catch (err) {
         console.error("Failed to notify bot:", err);
       }
@@ -583,7 +586,7 @@
           claim.onclick = () => {
             if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
             if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-              showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites to claim.`, 'error');
+              showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
               return;
             }
             handleClaim(key);
@@ -608,7 +611,7 @@
 
     function toDigits(n){
       return String(n).split('').map(ch=>{
-        const map={'0':'𝟶','1':'𝟷','2':'𝟸','3':'𝟹','4':'𝟻','5':'𝟻','6':'𝟼','7':'𝟽','8':'𝟾','9':'𝟿'};
+        const map={'0':'𝟶','1':'𝟷','2':'𝟸','3':'𝟹','4':'𝟺','5':'𝟻','6':'𝟼','7':'𝟽','8':'𝟾','9':'𝟿'};
         return map[ch]||ch;
       }).join('');
     }
@@ -620,11 +623,9 @@
       const list = document.getElementById('mygiftsList'); list.innerHTML = '';
       let anyGift = false;
       
-      // لعرض الهدايا المجمعة: نستخدم myGifts الذي يحمل الكمية
       Object.keys(myGifts).forEach(key=>{
         if (myGifts[key] > 0) {
           anyGift = true;
-          // myGiftDates[key] يفترض أنه يحمل تاريخ آخر سحب لهذه الهدية
           const lastDate = myGiftDates[key] || 'N/A';
           list.innerHTML += `<div class="mygifts-item">
             <img src="${giftsData[key].img}" alt="${giftsData[key].en}" loading="lazy">
@@ -659,6 +660,7 @@
     
     async function updateInviteStats() {
       const userId = tgUser?.id || 'unknown';
+      // يتم جلب total, active, pending من الـ API حيث يتم احتسابهم بناءً على 20 إعلاناً
       const res = await fetchApi({ type: 'invite-stats', data: { userId } });
       if (res.ok && res.data) {
         inviteStats.total = res.data.total ?? inviteStats.total;
@@ -677,16 +679,10 @@
     function closeTaskPage(){ document.getElementById('taskFullPage').style.display = 'none'; document.body.style.overflow = ""; }
 
     function updateTaskProgress(){
-      // الدعوات الكلية التي استخدمها المستخدم للمستويات التي سحبها بالفعل
+      // ... منطق مهمة الدب ...
       const totalUsedInvites = bearTaskLevel * TASK_INVITES_PER_LEVEL; 
-      
-      // الهدف الكلي (التراكمي) للمستوى القادم
       const cumulativeTarget = totalUsedInvites + TASK_INVITES_PER_LEVEL; 
-      
-      // الدعوات التي حققها المستخدم في المستوى الحالي فقط
       const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      
-      // حساب النسبة المئوية للتقدم في المستوى الحالي
       const percent = (currentLevelProgress / TASK_INVITES_PER_LEVEL) * 100;
       
       const progressBarContainer = document.getElementById('taskProgressBarContainer');
@@ -695,7 +691,7 @@
       const claimBtn = document.getElementById('taskClaimBtn');
       const nextTargetSpan = document.getElementById('taskNextTarget');
 
-      nextTargetSpan.textContent = TASK_INVITES_PER_LEVEL; // عرض 50 صديقاً للربح
+      nextTargetSpan.textContent = TASK_INVITES_PER_LEVEL; 
       
       const canClaimTask = currentLevelProgress >= TASK_INVITES_PER_LEVEL;
 
@@ -717,7 +713,7 @@
     async function claimBearGift() {
       if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
       if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites to claim.`, 'error');
+        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
         return;
       }
       
@@ -732,7 +728,7 @@
       const userId = tgUser?.id || 'unknown';
       const username = getDisplayedUsername();
 
-      // IMPORTANT: server expects taskId and userId
+      // طلب سحب مهمة
       const res = await fetchApi({ type: 'claim-task', data: { taskId: 'bear', userId } });
       
       if (!res.ok) { 
@@ -741,12 +737,11 @@
         return; 
       }
 
-      // تحديث الحالة بالكامل بعد السحب لضمان التزامن
       await loadUserState(); 
-      await updateInviteStats(); // تحديث إحصائيات الدعوات
+      await updateInviteStats(); 
       
       showToast('🎁 Bear gift claimed successfully!', 'success');
-      updateTaskProgress(); // تحديث العرض بعد تحديث المستوى
+      updateTaskProgress(); 
       closeTaskPage();
     }
 
@@ -793,9 +788,12 @@
           });
         }
         
-        // 3. استرجاع تاريخ آخر سحب (عام)
+        // 3. استرجاع تاريخ آخر سحب (عام) من السيرفر
         if (res.data.last_claim_date) {
-          localStorage.setItem('lastClaimDate', res.data.last_claim_date);
+          lastClaimDateFromApi = res.data.last_claim_date; // حفظ التاريخ في المتغير الجديد
+          // لا نستخدم localStorage هنا، نعتمد على المتغير
+        } else {
+           lastClaimDateFromApi = null;
         }
         
         // 4. استرجاع مستوى مهمة الدب
@@ -825,7 +823,6 @@
       };
       try {
         const res = await fetchApi({ type: 'register', data: payload });
-        // لا تظهر توست التسجيل في كل مرة لتجنب إزعاج المستخدم
         if (res.ok) {
             console.log('User registered/updated.');
         } else {
@@ -842,7 +839,7 @@
       div.className = 'gift-toast';
       div.innerHTML = `
         <div style="font-size:20px;margin-bottom:8px;color:#fff;">${d.icon} ${d.en} Requirements</div>
-        <div style="font-size:17px;">Watch <b>${d.ads}</b> ads & bring <b>${d.inv}</b> active invites to claim!</div>
+        <div style="font-size:17px;">Watch <b>${d.ads}</b> ads & bring <b>${d.inv}</b> active invites (20+ ads) to claim!</div>
       `;
       document.body.appendChild(div);
       setTimeout(() => div.remove(), 3000);
