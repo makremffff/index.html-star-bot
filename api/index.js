@@ -11,6 +11,9 @@ const GIFT_AD_REQUIREMENTS = {
   'rose': 350
 };
 
+// ثابت جديد: عدد الإعلانات المطلوبة لتفعيل الإحالة (20 إعلاناً)
+const REQUIRED_ADS_FOR_ACTIVE = 20;
+
 function headers() {
   return {
     'apikey': SUPABASE_ANON_KEY,
@@ -47,10 +50,23 @@ async function rpc(name, params) {
     body: JSON.stringify(params)
   });
   const data = await res.json().catch(() => null);
-  // Supabase RPC قد يُرجع 200 مع بيانات فارغة إذا كانت ناجحة ولا تُرجع شيئًا
   if (res.status === 204) return { ok: true, status: 204, data: null };
   return { ok: res.ok, status: res.status, data };
 }
+
+// دالة مساعدة جديدة: تجلب إجمالي مشاهدات الإعلانات لجميع الهدايا لمستخدم معين
+async function getAdViewsForUser(userId) {
+  // يفترض أن ad_views جدول يجمع الإعلانات (gift_id, user_id, views)
+  const adRes = await get('ad_views', `user_id=eq.${userId}&select=views`);
+  let totalViews = 0;
+  if (adRes.ok && Array.isArray(adRes.data)) {
+    adRes.data.forEach(r => { 
+        totalViews += Number(r.views || 0); 
+    });
+  }
+  return totalViews;
+}
+
 
 // ----------------- API Handler -----------------
 export default async function handler(req, res) {
@@ -88,7 +104,6 @@ export default async function handler(req, res) {
         const { giftId, userId } = body;
         if (!giftId || !userId) return res.status(400).json({ message: 'giftId and userId required' });
 
-        // نستخدم RPC لزيادة عداد ad_view لـ giftId و userId
         const up = await rpc('upsert_gift_action', {
           p_user_id: userId,
           p_gift_id: giftId,
@@ -101,7 +116,6 @@ export default async function handler(req, res) {
           return res.status(500).json({ message: 'Failed to record ad view', rpc_response: up.data });
         }
 
-        // جلب جميع مشاهدات الإعلانات لجميع الهدايا لتحديث الحالة الأمامية بشكل متزامن
         const adRes = await get('ad_views', `user_id=eq.${userId}&select=gift_id,views`);
         const ad_views = {};
         if (adRes.ok && Array.isArray(adRes.data)) {
@@ -121,7 +135,6 @@ export default async function handler(req, res) {
         const giftReqViews = GIFT_AD_REQUIREMENTS[giftId];
         if (!giftReqViews) return res.status(400).json({ message: 'Invalid gift ID or requirements missing' });
 
-        // حساب إجمالي مشاهدات الإعلانات لهذه الهدية
         const adRes = await get('ad_views', `user_id=eq.${userId}&gift_id=eq.${giftId}&select=views`);
         let views = 0;
         if (adRes.ok && Array.isArray(adRes.data)) {
@@ -130,7 +143,6 @@ export default async function handler(req, res) {
 
         if (views < giftReqViews) return res.status(400).json({ message: `Need ${giftReqViews} ad views to claim this gift`, current: views });
 
-        // Record the claim (RPC increments quantity in 'gifts' table, and records last_claim_date)
         const up = await rpc('upsert_gift_action', {
           p_user_id: userId,
           p_gift_id: giftId,
@@ -143,7 +155,6 @@ export default async function handler(req, res) {
           return res.status(500).json({ message: 'Failed to record claim', rpc_response: up.data });
         }
 
-        // تحديث تاريخ آخر سحب عام في جدول users (للتأكد من فترة الـ 48 ساعة)
         await upsert('users', { id: userId, last_claim_date: new Date().toISOString() });
 
         return res.status(200).json({ message: 'Gift claimed' });
@@ -151,16 +162,12 @@ export default async function handler(req, res) {
 
       // ----------------- Claim Task (Bear reward) -----------------
       case 'claim-task': {
-        const { taskId, userId } = body; // taskId is 'bear'
+        const { taskId, userId } = body;
         if (!taskId || !userId) return res.status(400).json({ message: 'taskId and userId required' });
         
-        // هنا يجب أن يكون لديك منطق تحقق من إحصائيات الدعوات الكافية على السيرفر
-        // نعتمد حالياً على التحقق في الواجهة الأمامية للحفاظ على بساطة الـ API
-
-        // Record the claim (يستخدم نفس RPC لكن قد يقوم بتحديث حقل المهمة أيضاً)
         const up = await rpc('upsert_gift_action', {
           p_user_id: userId,
-          p_gift_id: taskId, // نستخدم اسم المهمة هنا
+          p_gift_id: taskId,
           p_inc: 1,
           p_action: 'task_claim'
         });
@@ -170,38 +177,38 @@ export default async function handler(req, res) {
             return res.status(500).json({ message: 'Failed to record task claim', rpc_response: up.data });
         }
 
-        // Increment user's bear_task_level (يتم افتراض وجود هذا الحقل في جدول users)
         if (taskId === 'bear') {
           await rpc('increment_user_field', { p_user_id: userId, p_field: 'bear_task_level' });
         }
 
-        // تحديث تاريخ آخر سحب عام (لـ 48 ساعة)
         await upsert('users', { id: userId, last_claim_date: new Date().toISOString() });
 
         return res.status(200).json({ message: 'Task claimed' });
       }
 
-      // ----------------- Invite Stats -----------------
+      // ----------------- Invite Stats (تم تعديل المنطق هنا) -----------------
       case 'invite-stats': {
         const { userId } = body;
         if (!userId) return res.status(400).json({ message: 'userId required' });
 
-        // نعتمد على جدول users وحقل ref_by
-        const totalRes = await get('users', `ref_by=eq.${userId}&select=is_active,last_activity`);
+        // جلب جميع المستخدمين الذين تمت إحالتهم بواسطة هذا المستخدم (ID)
+        const totalRes = await get('users', `ref_by=eq.${userId}&select=id`);
         let total = 0, active = 0, pending = 0;
+
         if (totalRes.ok && Array.isArray(totalRes.data)) {
           total = totalRes.data.length;
           
-          totalRes.data.forEach(u => {
-            // منطق "Active": إما حقل is_active صريح أو last_activity خلال الـ 48 ساعة الماضية (مثال جيد للاستدلال)
-            const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+          // حلقة للتحقق من حالة كل مستخدم تمت إحالته
+          for (const u of totalRes.data) {
+            // نحسب إجمالي مشاهدات الإعلانات للمستخدم المُحال
+            const views = await getAdViewsForUser(u.id); 
             
-            if (u.is_active === true || 
-                (u.last_activity && new Date(u.last_activity) > twoDaysAgo)) {
+            if (views >= REQUIRED_ADS_FOR_ACTIVE) {
               active++;
+            } else {
+              pending++;
             }
-          });
-          pending = total - active;
+          }
         }
 
         return res.status(200).json({ total, active, pending });
@@ -212,7 +219,7 @@ export default async function handler(req, res) {
         const { userId } = body;
         if (!userId) return res.status(400).json({ message: 'userId required' });
 
-        // ad_views: جميع مشاهدات الإعلانات
+        // ad_views
         const adRes = await get('ad_views', `user_id=eq.${userId}&select=gift_id,views`);
         const ad_views = {};
         if (adRes.ok && Array.isArray(adRes.data)) {
@@ -222,7 +229,7 @@ export default async function handler(req, res) {
           });
         }
 
-        // claims: نعتمد على جدول 'gifts' الذي يخزن الكمية وتاريخ آخر مطالبة
+        // claims
         const claimRes = await get('gifts', `user_id=eq.${userId}&select=gift_id,quantity,last_claim_date`);
         const claims = {};
         if (claimRes.ok && Array.isArray(claimRes.data)) {
@@ -235,7 +242,7 @@ export default async function handler(req, res) {
           });
         }
 
-        // user-level fields: last_claim_date (عام), bear_task_level
+        // user-level fields
         const userRes = await get('users', `id=eq.${userId}&select=last_claim_date,bear_task_level`);
         let last_claim_date = null, bear_task_level = 0;
         if (userRes.ok && Array.isArray(userRes.data) && userRes.data.length) {
