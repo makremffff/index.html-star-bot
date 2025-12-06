@@ -103,6 +103,45 @@
     .channel-task-card span{font-family:monospace;font-size:16px;color:#fff}
     .channel-join-btn{background:linear-gradient(90deg,#00c6ff,#0072ff);border:1px solid #0059c7;color:#fff;font-weight:bold;font-family:monospace;padding:8px 24px;font-size:16px;border-radius:10px;margin-top:12px;cursor:pointer;box-shadow:0 0 8px #fff3;transition:.15s}
 
+    /* مهام إضافية: 15 إحالة دب و35 إحالة بوكس */
+    .task-extra-card{
+      background:#222237;
+      padding:20px;
+      border-radius:12px;
+      box-shadow:2px 2px 14px #0004;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      justify-content:center;
+      margin-top:12px;
+    }
+    .task-extra-card img{
+      width:24px;
+      height:24px;
+      object-fit:cover;
+      border-radius:4px;
+    }
+    .task-extra-card span{
+      font-family:monospace;
+      font-size:16px;
+      color:#fff;
+    }
+    .task-extra-claim-btn{
+      background:linear-gradient(90deg,#ffe161,#ffd700);
+      border:1px solid #cead23;
+      color:#222;
+      font-weight:bold;
+      font-family:monospace;
+      padding:8px 24px;
+      font-size:16px;
+      border-radius:10px;
+      margin-top:12px;
+      cursor:pointer;
+      animation:pulse 1s infinite alternate;
+      box-shadow:0 0 8px #fff3;
+      transition:.15s;
+    }
+
     .gift-toast{
       position:fixed;
       top:80px; left:50%;
@@ -226,6 +265,8 @@
       <button class="task-close-btn" onclick="closeTaskPage()">&times;</button>
     </div>
     <div class="task-content">
+
+      <!-- مهمة الدب الأصلية -->
       <div class="task-progress-card">
         <img src="https://giftgogame.com/static/thumbnails/5170233102089322756.webp" alt="🧸">
         <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskNextTarget">50</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚎𝚊𝚛</span>
@@ -235,6 +276,28 @@
       </div>
       <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskProgressText">0/50</p>
       <button class="task-claim-btn" id="taskClaimBtn" style="display:none" onclick="claimBearGift()">CLAIM 𝙱𝚎𝚊𝚛</button>
+
+      <!-- مهمة 15 إحالة دب -->
+      <div class="task-extra-card">
+        <img src="https://giftgogame.com/static/thumbnails/5170233102089322756.webp" alt="🧸">
+        <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskBear15Target">15</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚎𝚊𝚛</span>
+      </div>
+      <div class="task-progress-bar" id="taskBear15ProgressBarContainer" style="display:block">
+        <div class="task-progress-bar-inner" id="taskBear15ProgressBar" style="width:0%"></div>
+      </div>
+      <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskBear15ProgressText">0/15</p>
+      <button class="task-extra-claim-btn" id="taskBear15ClaimBtn" style="display:none" onclick="claimBear15Gift()">CLAIM 𝙱𝚎𝚊𝚛</button>
+
+      <!-- مهمة 35 إحالة بوكس -->
+      <div class="task-extra-card">
+        <img src="https://giftgogame.com/static/thumbnails/5170250947678437525.webp" alt="📦">
+        <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskBox35Target">35</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚘𝚡</span>
+      </div>
+      <div class="task-progress-bar" id="taskBox35ProgressBarContainer" style="display:block">
+        <div class="task-progress-bar-inner" id="taskBox35ProgressBar" style="width:0%"></div>
+      </div>
+      <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskBox35ProgressText">0/35</p>
+      <button class="task-extra-claim-btn" id="taskBox35ClaimBtn" style="display:none" onclick="claimBox35Gift()">CLAIM 𝙱𝚘𝚡</button>
 
       <div class="channel-task-card">
         <img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" alt="📢">
@@ -308,6 +371,10 @@
     let canClaim = { bear:false, heart:false, box:false, rose:false };
     let inviteStats = { total:0, active:0, pending:0 };
     let bearTaskLevel = 0;
+
+    // مستويات المهام الإضافية
+    let bear15TaskLevel = 0;
+    let box35TaskLevel = 0;
     
     // تهيئة العدادات ومتطلبات الإعلانات
     Object.keys(giftsData).forEach(key => {
@@ -736,6 +803,8 @@
       // تحديث الإحصائيات قبل عرض صفحة المهمة
       await updateInviteStats(); 
       updateTaskProgress();
+      updateBear15TaskProgress();
+      updateBox35TaskProgress();
       document.getElementById('taskFullPage').style.display = 'flex';
       document.body.style.overflow = "hidden";
     }
@@ -757,6 +826,62 @@
       nextTargetSpan.textContent = TASK_INVITES_PER_LEVEL; 
       
       const canClaimTask = currentLevelProgress >= TASK_INVITES_PER_LEVEL;
+
+      if (canClaimTask) {
+        progressBarContainer.style.display = 'block';
+        progressBar.style.width = '100%';
+        progressText.style.display = 'block';
+        progressText.textContent = `${cumulativeTarget}/${cumulativeTarget}`;
+        claimBtn.style.display = 'inline-block';
+      } else {
+        progressBarContainer.style.display = 'block';
+        progressText.style.display = 'block';
+        claimBtn.style.display = 'none';
+        progressBar.style.width = Math.min(100, percent) + '%';
+        progressText.textContent = `${inviteStats.total}/${cumulativeTarget}`;
+      }
+    }
+
+    function updateBear15TaskProgress(){
+      const totalUsedInvites = bear15TaskLevel * 15; 
+      const cumulativeTarget = totalUsedInvites + 15; 
+      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
+      const percent = (currentLevelProgress / 15) * 100;
+      
+      const progressBarContainer = document.getElementById('taskBear15ProgressBarContainer');
+      const progressBar = document.getElementById('taskBear15ProgressBar');
+      const progressText = document.getElementById('taskBear15ProgressText');
+      const claimBtn = document.getElementById('taskBear15ClaimBtn');
+
+      const canClaimTask = currentLevelProgress >= 15;
+
+      if (canClaimTask) {
+        progressBarContainer.style.display = 'block';
+        progressBar.style.width = '100%';
+        progressText.style.display = 'block';
+        progressText.textContent = `${cumulativeTarget}/${cumulativeTarget}`;
+        claimBtn.style.display = 'inline-block';
+      } else {
+        progressBarContainer.style.display = 'block';
+        progressText.style.display = 'block';
+        claimBtn.style.display = 'none';
+        progressBar.style.width = Math.min(100, percent) + '%';
+        progressText.textContent = `${inviteStats.total}/${cumulativeTarget}`;
+      }
+    }
+
+    function updateBox35TaskProgress(){
+      const totalUsedInvites = box35TaskLevel * 35; 
+      const cumulativeTarget = totalUsedInvites + 35; 
+      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
+      const percent = (currentLevelProgress / 35) * 100;
+      
+      const progressBarContainer = document.getElementById('taskBox35ProgressBarContainer');
+      const progressBar = document.getElementById('taskBox35ProgressBar');
+      const progressText = document.getElementById('taskBox35ProgressText');
+      const claimBtn = document.getElementById('taskBox35ClaimBtn');
+
+      const canClaimTask = currentLevelProgress >= 35;
 
       if (canClaimTask) {
         progressBarContainer.style.display = 'block';
@@ -805,6 +930,76 @@
       
       showToast('🎁 Bear gift claimed successfully!', 'success');
       updateTaskProgress(); 
+      closeTaskPage();
+    }
+
+    async function claimBear15Gift() {
+      if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
+      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
+        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
+        return;
+      }
+      
+      const totalUsedInvites = bear15TaskLevel * 15; 
+      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
+      
+      if(currentLevelProgress < 15){
+        showToast("You haven't reached the required invites for this task level yet.", 'error');
+        return;
+      }
+
+      const userId = tgUser?.id || 'unknown';
+      const username = getDisplayedUsername();
+
+      // طلب سحب مهمة
+      const res = await fetchApi({ type: 'claim-task', data: { taskId: 'bear15', userId } });
+      
+      if (!res.ok) { 
+        const msg = res.data && res.data.message ? res.data.message : 'Claim task failed. Try again later.';
+        showToast(msg, 'error'); 
+        return; 
+      }
+
+      await loadUserState(); 
+      await updateInviteStats(); 
+      
+      showToast('🎁 Bear gift claimed successfully!', 'success');
+      updateBear15TaskProgress(); 
+      closeTaskPage();
+    }
+
+    async function claimBox35Gift() {
+      if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
+      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
+        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
+        return;
+      }
+      
+      const totalUsedInvites = box35TaskLevel * 35; 
+      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
+      
+      if(currentLevelProgress < 35){
+        showToast("You haven't reached the required invites for this task level yet.", 'error');
+        return;
+      }
+
+      const userId = tgUser?.id || 'unknown';
+      const username = getDisplayedUsername();
+
+      // طلب سحب مهمة
+      const res = await fetchApi({ type: 'claim-task', data: { taskId: 'box35', userId } });
+      
+      if (!res.ok) { 
+        const msg = res.data && res.data.message ? res.data.message : 'Claim task failed. Try again later.';
+        showToast(msg, 'error'); 
+        return; 
+      }
+
+      await loadUserState(); 
+      await updateInviteStats(); 
+      
+      showToast('🎁 Box gift claimed successfully!', 'success');
+      updateBox35TaskProgress(); 
       closeTaskPage();
     }
 
@@ -862,6 +1057,14 @@
         // 4. استرجاع مستوى مهمة الدب
         if (res.data.bear_task_level !== undefined) {
           bearTaskLevel = Number(res.data.bear_task_level);
+        }
+
+        // 5. استرجاع مستويات المهام الإضافية
+        if (res.data.bear15_task_level !== undefined) {
+          bear15TaskLevel = Number(res.data.bear15_task_level);
+        }
+        if (res.data.box35_task_level !== undefined) {
+          box35TaskLevel = Number(res.data.box35_task_level);
         }
       }
     }
