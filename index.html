@@ -71,8 +71,22 @@
     .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:30px;background:linear-gradient(90deg,#2a8f38,#5bd36a);color:#062207;font-weight:700;padding:12px 18px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;gap:12px;min-width:220px;justify-content:center;font-family:monospace}
     .toast.error{background:linear-gradient(90deg,#ff5a5a,#ff8a8a);color:#fff}
     .toast .check{font-size:18px}
-    .invite-link-box{background:#222237;padding:14px 18px;border-radius:12px;font-size:15px;font-family:monospace;color:#ffd700;word-break:break-all;box-shadow:2px 2px 14px #0004}
-    .invite-stats{display:flex;justify-content:space-around;width:100%;margin-top:20px}
+    .invite-link-box{background:#222237;padding:14px 18px;border-radius:12px;font-size:15px;font-family:monospace;color:#ffd700;word-break:break-all;box-shadow:2px 2px 14px #0004; cursor:text; user-select:text; position:relative;}
+    .invite-link-container{display:flex; gap:10px; width:100%; align-items:center;}
+    .copy-btn{
+      background:linear-gradient(90deg,#ffd700,#ffe161);
+      border:none;
+      color:#222;
+      font-weight:bold;
+      padding:10px 16px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:14px;
+      flex-shrink:0;
+      box-shadow:0 0 8px #fff3;
+      transition:.15s;
+    }
+    .copy-btn:active{box-shadow:inset 0 0 4px #000}
     .stat-item{background:#222237;padding:12px 20px;border-radius:12px;box-shadow:2px 2px 14px #0004;text-align:center;min-width:90px}
     .stat-item .stat-label{color:#aaa;font-size:13px;margin-bottom:4px}
     .stat-item .stat-value{color:#fff;font-size:18px;font-weight:700}
@@ -184,7 +198,11 @@
         </video>
       </div>
       <p>Share your personal link and earn rewards!</p>
-      <div class="invite-link-box" id="inviteLink"></div>
+      
+      <div class="invite-link-container">
+        <div class="invite-link-box" id="inviteLink" contenteditable="false"></div> 
+        <button class="copy-btn" onclick="copyInviteLink()">Copy</button>
+      </div>
       <div class="invite-stats">
         <div class="stat-item">
           <div class="stat-label">Active Invites</div>
@@ -617,6 +635,49 @@
     }
 
     /*******************************
+     * دوال النسخ (Copy Link)
+     *******************************/
+    function copyInviteLink() {
+        const linkElement = document.getElementById('inviteLink');
+        const link = linkElement ? linkElement.textContent.trim() : null;
+
+        if (link) {
+            // استخدام واجهة Clipboard API الحديثة
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('Invitation link copied automatically! 🎉', 'success', 2500);
+            }).catch(err => {
+                // حل احتياطي إذا فشل الـ API
+                fallbackCopyTextToClipboard(link);
+            });
+        } else {
+            showToast('Cannot generate or find the invitation link.', 'error', 3000);
+        }
+    }
+
+    // وظيفة النسخ الاحتياطية (للمتصفحات القديمة أو إذا فشل writeText)
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";  // تجعلها خارج الشاشة
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showToast('Invitation link copied automatically! 🎉', 'success', 2500);
+            } else {
+                showToast('Failed to copy the link. Please copy it manually.', 'error', 4000);
+            }
+        } catch (err) {
+            showToast('Failed to copy the link. Please copy it manually.', 'error', 4000);
+        }
+
+        document.body.removeChild(textArea);
+    }
+    /*******************************
      * صفحات، مهمة، دعوات
      *******************************/
     function openMyGiftsPage(){
@@ -645,6 +706,8 @@
       const userId = tgUser?.id || 'unknown';
       const botUsername = 'Qyyyyya_bot'; // تأكد من اسم البوت
       const link = `https://t.me/${botUsername}/earn?startapp=ref_${userId}`;
+      
+      // وضع رابط الإحالة ليتم عرضه ونسخه
       document.getElementById('inviteLink').textContent = link;
 
       // تحديث إحصائيات الدعوات
