@@ -242,11 +242,11 @@
     /*******************************
      * إعدادات ومتغيرات عامة
      *******************************/
-    // تم تحديث هذا الثابت ليعكس متطلبات الإحالة النشطة (20 إعلاناً)
+    // تم تحديث هذا الثابت ليعكس متطلبات الإحالة النشطة (10 دعوات)
     const REQUIRED_ACTIVE_INVITES = 10; 
     const TASK_INVITES_PER_LEVEL = 50; 
     
-    // ثابت جديد: عدد الإعلانات التي يجب على المستخدم المُحال مشاهدتها ليعتبر 'Active'
+    // ثابت جديد: عدد الإعلانات التي يجب على المستخدم المُحال مشاهدتها ليعتبر 'Active' (يتوافق مع index.js)
     const REQUIRED_ADS_TO_ACTIVATE_INVITE = 20; 
 
     const loaderEl = document.getElementById('loader');
@@ -839,7 +839,7 @@
       div.className = 'gift-toast';
       div.innerHTML = `
         <div style="font-size:20px;margin-bottom:8px;color:#fff;">${d.icon} ${d.en} Requirements</div>
-        <div style="font-size:17px;">Watch <b>${d.ads}</b> ads & bring <b>${d.inv}</b> active invites (20+ ads) to claim!</div>
+        <div style="font-size:17px;">Watch <b>${d.ads}</b> ads & bring <b>${d.inv}</b> active invites (${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim!</div>
       `;
       document.body.appendChild(div);
       setTimeout(() => div.remove(), 3000);
