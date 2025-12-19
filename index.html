@@ -1,1122 +1,542 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <title>Telegram Gift</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="utf-8"/>
+  <title>Rain Game — Withdraw USDT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 
-  <script src="//libtl.com/sdk.js" data-zone="10245709" data-sdk="show_10245709"></script>
+  <!-- SDK libtl.com -->
+  <script src='//libtl.com/sdk.js' data-zone='10245709' data-sdk='show_10245709'></script>
 
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:20px;
-      padding:20px 0;
-      font-family:Arial,Helvetica,sans-serif;
-      justify-content:space-between;
-      color:#fff;
-      position:relative;
-      overflow:hidden;
-      background:#000;
+    :root{
+      --bg-900: #050814;
+      --bg-800: #071020;
+      --glass-01: rgba(255,255,255,.018);
+      --glass-02: rgba(255,255,255,.012);
+      --border-weak: rgba(255,255,255,.04);
+      --muted: #96a3b3;
+      --text: #eaf6f2;
+      --accent: #00d1a7;
+      --accent-2: #00bcd4;
+      --danger: #ff6b64;
+      --radius: 14px;
+      --pill-radius: 28px;
+      --shadow-soft: 0 8px 28px rgba(3,7,18,.55);
+      --shadow-lg: 0 22px 64px rgba(3,7,18,.72);
+      --glass-blur: 8px;
+      --easing: cubic-bezier(.16,.9,.34,1);
+      --hud-pad: 10px 14px;
+      --max-panel: 640px;
+      --focus-ring: 0 0 0 4px rgba(0,209,167,.12);
+      --tap-scale: .985;
     }
 
-    /* خلفية الفيديو: تُشَغَّل مرة واحدة فقط عند الحاجة لتقليل الضغط */
-    #bgVideo{
-      position:fixed;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      z-index:-1;
-    }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{Height:100%;margin:0;background:radial-gradient(900px 420px at 14% 10%, rgba(0,209,167,.02), transparent 6%), linear-gradient(135deg,var(--bg-900),var(--bg-800));color:var(--text);font-family:Inter,"Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,-apple-system;font-size:15px;line-height:1.28;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    body{width:100vw;height:100vh;position:fixed;top:0;left:0;user-select:none;overflow:hidden;-webkit-user-select:none;-ms-touch-action:manipulation;touch-action:manipulation}
 
-    .title-bar{display:flex;align-items:center;gap:8px; z-index:1;}
-    .title-bar img.star-icon{height:22px}
-    .title-bar .pencil-text{font-size:24px;background:linear-gradient(135deg,#fff 30%,#ccc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 2px #000);letter-spacing:1px}
-    .row{display:flex;gap:24px;flex-wrap:nowrap;overflow-x:auto;max-width:100vw;padding:0 10px; z-index:1;}
-    .card{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
-    .btn-img{background:none;border:none;cursor:pointer;width:70px;height:70px;padding:0}
-    .btn-img img{width:100%;height:100%;object-fit:cover}
-    .stars-row{display:flex;align-items:center;gap:4px}
-    .stars-row img.star{height:14px}
-    .stars-row span{color:#fff;font-size:13px;font-weight:500;margin-left:2px}
-    .ad-btn{background:linear-gradient(145deg,#00c6ff,#0072ff);border:1px solid #0059c7;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;box-shadow:2px 2px 6px #000;font-family:monospace;min-width:60px;transition:.2s}
-    .ad-btn.disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
-    .ad-btn:active{box-shadow:inset 2px 2px 4px #000}
-    .claim-btn{background:linear-gradient(90deg,#ffe161,#ffd700);border:1px solid #cead23;color:#222;font-weight:bold;font-family:monospace;padding:6px 12px;font-size:14px;border-radius:10px;margin-top:3px;margin-bottom:3px;cursor:pointer;animation:pulse 1s infinite alternate;box-shadow:0 0 8px #fff3;min-width:48px;transition:.15s}
-    .claim-btn.disabled{opacity:.5;cursor:not-allowed;animation:none;box-shadow:none}
-    @keyframes pulse{0%{box-shadow:0 0 8px #ffe161}100%{box-shadow:0 0 18px #ffe161}}
-    .video-circle{width:125px;height:125px;border-radius:50%;overflow:hidden;box-shadow:0 0 15px rgba(255,255,255,0.1);transform:translateY(-10vh)}
-    .video-circle video{width:100%;height:100%;object-fit:cover;background:#000}
-    .username-under-circle{margin-top:8px;font-size:16px;color:#fff;font-family:monospace;cursor:pointer;user-select:none}
-    .bottom-bar{width:0%;display:flex;justify-content:center;gap:8px;padding:10px 0;background:#111;border-top:1px solid #222;margin-top:auto; z-index:1;}
-    .bottom-bar button{background:linear-gradient(145deg,#00c6ff,#0072ff);border:1px solid #0059c7;color:#fff;padding:4px 12px;border-radius:12px;font-size:15px;cursor:pointer;box-shadow:2px 2px 6px #000;font-family:monospace;transition:0.2s}
-    .bottom-bar button:active{box-shadow:inset 2px 2px 4px #000}
-    #myGiftsFullPage,#inviteFullPage,#taskFullPage{position:fixed;inset:0;width:100vw;height:100vh;background:#181828;color:#fff;display:none;z-index:2000;flex-direction:column;align-items:center;justify-content:flex-start;animation:fadeIn .25s}
-    @keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
-    .mygifts-header,.invite-header,.task-header{width:100%;padding:28px 0 10px 0;display:flex;justify-content:center;align-items:center;position:relative}
-    .mygifts-header h2,.invite-header h2,.task-header h2{font-size:28px;margin:0;font-family:monospace;letter-spacing:1px;background:linear-gradient(135deg,#fff 30%,#ccc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 2px #000)}
-    .mygifts-close-btn,.invite-close-btn,.task-close-btn{position:absolute;right:20px;top:18px;background:none;border:none;color:#fff;font-size:26px;cursor:pointer;z-index:10}
-    .mygifts-content,.invite-content,.task-content{text-align:center;padding:30px 18px 0 18px;flex:1;width:100%;display:flex;flex-direction:column;gap:20px}
-    .mygifts-list{margin-top:38px;display:flex;flex-direction:column;align-items:center;gap:22px;flex-wrap:nowrap;flex:1;min-height:0;overflow-y:auto;width:100%;padding:12px}
-    .mygifts-item{background:#222237;padding:16px 20px 14px 20px;border-radius:12px;box-shadow:2px 2px 14px #0004;min-width:90px;margin-bottom:20px;display:flex;flex-direction:column;align-items:center}
-    .mygifts-item img{width:60px;height:60px;object-fit:cover;border-radius:8px;margin-bottom:8px;background:#111}
-    .mygifts-label{color:#fee055;font-size:16px;font-family:monospace}
-    .mygifts-date{color:#aaa;margin-top:2px;font-size:13px;font-family:monospace}
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:30px;background:linear-gradient(90deg,#2a8f38,#5bd36a);color:#062207;font-weight:700;padding:12px 18px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;gap:12px;min-width:220px;justify-content:center;font-family:monospace}
-    .toast.error{background:linear-gradient(90deg,#ff5a5a,#ff8a8a);color:#fff}
-    .toast .check{font-size:18px}
-    .invite-link-box{background:#222237;padding:14px 18px;border-radius:12px;font-size:15px;font-family:monospace;color:#ffd700;word-break:break-all;box-shadow:2px 2px 14px #0004; cursor:text; user-select:text; position:relative;}
-    .invite-link-container{display:flex; gap:10px; width:100%; align-items:center;}
-    .copy-btn{
-      background:linear-gradient(90deg,#ffd700,#ffe161);
+    /* HUD */
+    #timerWrap,#scoreWrap{position:absolute;top:12px;display:flex;align-items:center;gap:10px;padding:var(--hud-pad);border-radius:var(--pill-radius);background:linear-gradient(180deg,var(--glass-01),var(--glass-02));border:1px solid var(--border-weak);box-shadow:var(--shadow-soft),0 1px 0 rgba(255,255,255,.02) inset;backdrop-filter:blur(var(--glass-blur)) saturate(120%);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(120%);transition:transform .18s var(--easing),box-shadow .18s var(--easing),opacity .18s linear;z-index:140;font-weight:700;color:var(--muted);min-height:48px;font-size:14px;-webkit-tap-highlight-color:transparent}
+    #timerWrap{left:12px}#scoreWrap{right:12px}
+    #timerWrap span,#scoreWrap span{display:inline-block;padding:8px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(0,0,0,.16),rgba(255,255,255,.01));color:var(--accent);font-weight:900;font-variant-numeric:tabular-nums;box-shadow:0 6px 20px rgba(0,0,0,.48),0 1px 0 rgba(255,255,255,.02) inset;letter-spacing:.4px;min-width:44px;text-align:center}
+    #timerWrap:hover,#scoreWrap:hover{transform:translateY(-6px);box-shadow:0 18px 42px rgba(0,0,0,.6)}
+
+    #overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,12,.56),rgba(2,6,12,.72));display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .36s var(--easing),transform .36s var(--easing);z-index:120}
+    #overlay.show{opacity:1;pointer-events:auto}
+    .card-end{width:min(92%,520px);padding:26px 30px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.014),rgba(255,255,255,.006));border:1px solid rgba(255,255,255,.035);box-shadow:var(--shadow-lg),inset 0 1px 0 rgba(255,255,255,.02);color:var(--text);text-align:center;transform:translateY(10px) scale(.995);transition:transform .28s var(--easing),opacity .28s var(--easing);will-change:transform,opacity}
+    .card-end h2{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:2px;font-weight:700;text-transform:uppercase;opacity:.95}
+    .card-end p{margin:0 0 16px;font-size:46px;font-weight:900;color:var(--text);letter-spacing:.6px;text-shadow:0 10px 34px rgba(0,0,0,.65);line-height:1}
+    .card-end .btn{min-width:140px;height:44px;font-size:13px}
+
+    #restartBtn,
+    #withdrawBtnOverlay {
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      color:#021617;
       border:none;
-      color:#222;
-      font-weight:bold;
-      padding:10px 16px;
-      border-radius:10px;
-      cursor:pointer;
-      font-size:14px;
-      flex-shrink:0;
-      box-shadow:0 0 8px #fff3;
-      transition:.15s;
-    }
-    .copy-btn:active{box-shadow:inset 0 0 4px #000}
-    .stat-item{background:#222237;padding:12px 20px;border-radius:12px;box-shadow:2px 2px 14px #0004;text-align:center;min-width:90px}
-    .stat-item .stat-label{color:#aaa;font-size:13px;margin-bottom:4px}
-    .stat-item .stat-value{color:#fff;font-size:18px;font-weight:700}
-    .invite-video-circle{width:125px;height:125px;border-radius:50%;overflow:hidden;box-shadow:0 0 15px rgba(255,255,255,0.1);margin:10px auto}
-    .invite-video-circle video{width:100%;height:100%;object-fit:cover}
-    .task-progress-card{background:#222237;padding:20px;border-radius:12px;box-shadow:2px 2px 14px #0004;display:flex;align-items:center;gap:12px;justify-content:center}
-    .task-progress-card img{width:20px;height:20px;object-fit:cover;border-radius:4px}
-    .task-progress-card span{font-family:monospace;font-size:16px;color:#fff}
-    .task-progress-bar{width:100%;Height:8px;background:#111;border-radius:4px;overflow:hidden;margin-top:10px}
-    .task-progress-bar-inner{height:100%;background:linear-gradient(90deg,#ffe161,#ffd700);border-radius:4px;transition:width .3s ease}
-    .task-claim-btn{background:linear-gradient(90deg,#ffe161,#ffd700);border:1px solid #cead23;color:#222;font-weight:bold;font-family:monospace;padding:8px 24px;font-size:16px;border-radius:10px;margin-top:12px;cursor:pointer;animation:pulse 1s infinite alternate;box-shadow:0 0 8px #fff3;transition:.15s}
-    .channel-task-card{background:#222237;padding:20px;border-radius:12px;box-shadow:2px 2px 14px #0004;display:flex;align-items:center;gap:12px;justify-content:center;margin-top:12px}
-    .channel-task-card img{width:24px;height:24px;object-fit:cover;border-radius:4px}
-    .channel-task-card span{font-family:monospace;font-size:16px;color:#fff}
-    .channel-join-btn{background:linear-gradient(90deg,#00c6ff,#0072ff);border:1px solid #0059c7;color:#fff;font-weight:bold;font-family:monospace;padding:8px 24px;font-size:16px;border-radius:10px;margin-top:12px;cursor:pointer;box-shadow:0 0 8px #fff3;transition:.15s}
-
-    /* مهام إضافية: 15 إحالة دب و35 إحالة بوكس */
-    .task-extra-card{
-      background:#222237;
-      padding:20px;
+      box-shadow:0 10px 36px rgba(0,209,167,.12);
+      padding:10px 18px;
       border-radius:12px;
-      box-shadow:2px 2px 14px #0004;
-      display:flex;
-      align-items:center;
-      gap:12px;
-      justify-content:center;
-      margin-top:12px;
+      font-weight:800;
+      font-size:13px;
+      transition:transform .18s var(--easing),box-shadow .18s var(--easing);
+      min-width:140px;
+      -webkit-tap-highlight-color:transparent;
     }
-    .task-extra-card img{
-      width:24px;
-      height:24px;
-      object-fit:cover;
-      border-radius:4px;
+    #restartBtn:hover,
+    #withdrawBtnOverlay:hover {
+      transform:translateY(-3px);
+      box-shadow:0 20px 60px rgba(0,209,167,.14);
     }
-    .task-extra-card span{
-      font-family:monospace;
-      font-size:16px;
-      color:#fff;
+    #restartBtn { margin-right:6px }
+
+    #withdrawPanel{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .28s var(--easing);background:linear-gradient(180deg,rgba(2,6,23,.84),rgba(2,6,23,.9))}
+    #withdrawPanel.show{opacity:1;pointer-events:auto}
+    .panel{width:100%;max-width:var(--max-panel);border-radius:18px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.014),rgba(255,255,255,.004));border:1px solid rgba(255,255,255,.035);box-shadow:0 30px 80px rgba(2,8,18,.72);backdrop-filter:blur(6px) saturate(120%);-webkit-backdrop-filter:blur(6px) saturate(120%);color:var(--text);transform:translateY(6px);transition:transform .28s var(--easing),opacity .28s var(--easing);position:relative;will-change:transform,opacity}
+    .panel::after{content:"BNB Smart Chain · USDT";position:absolute;top:12px;right:16px;font-size:12px;color:var(--muted);background:transparent;padding:4px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px;opacity:.95;pointer-events:none}
+    .panel h1{margin:0 0 10px;font-size:18px;color:var(--accent);font-weight:800;letter-spacing:.4px}
+    .balance{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 18px;padding:18px;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.22),rgba(255,255,255,.005));border:1px solid rgba(255,255,255,.03);position:relative;overflow:visible;box-shadow:0 10px 30px rgba(2,8,18,.45)}
+    .balance::before{content:"Available Balance";position:absolute;top:-12px;left:16px;background:transparent;color:var(--muted);font-size:12px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.4px;transform:translateY(-2px)}
+    .bal-num{font-size:34px;font-weight:900;color:var(--text);text-shadow:0 10px 36px rgba(0,0,0,.6);font-variant-numeric:tabular-nums}
+    .balance::after{content:"";position:absolute;left:18px;right:18px;bottom:8px;height:4px;border-radius:6px;background:linear-gradient(90deg,rgba(0,209,167,.20),rgba(0,188,212,.12));filter:blur(6px);opacity:.98}
+    label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700}
+    input[type="text"],input[type="number"]{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(255,255,255,.006),rgba(255,255,255,.002));color:var(--text);font-size:15px;outline:none;transition:box-shadow .16s var(--easing),border-color .16s var(--easing),transform .12s var(--easing);-webkit-appearance:none;-moz-appearance:none}
+    input::placeholder{color:rgba(234,246,242,.42)}
+    input:focus{box-shadow:var(--focus-ring);border-color:rgba(0,209,167,.24);transform:translateY(-1px)}
+    label[for="amount"]{position:relative}
+    label[for="amount"]::after{content:"Minimum withdrawal: 2 USDT";display:block;margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;opacity:.95}
+    .row{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+    @media(min-width:720px){.row{flex-direction:row;justify-content:flex-start}}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;border:none;cursor:pointer;font-weight:800;font-size:14px;color:#021617;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 12px 36px rgba(0,209,167,.10);transition:transform .16s var(--easing),box-shadow .18s var(--easing),opacity .12s linear;will-change:transform,box-shadow;min-height:48px;position:relative;overflow:hidden}
+    .btn:hover{transform:translateY(-3px);box-shadow:0 28px 64px rgba(0,209,167,.12)}
+    .btn:active{transform:translateY(0) scale(var(--tap-scale));box-shadow:0 8px 22px rgba(0,0,0,.36)}
+    .btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.04);box-shadow:none}
+    .btn.ghost:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(2,8,18,.45)}
+    #withdrawDoBtn{width:100%}
+    #backToGameBtn{width:100%}
+    @media(min-width:720px){#withdrawDoBtn{width:auto;min-width:240px;flex:0 1 60%}#backToGameBtn{width:auto;min-width:140px;flex:0 1 auto}}
+    .btn[disabled]{opacity:.48;cursor:not-allowed;transform:none;box-shadow:none}
+    .btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+    .helper-btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.04);background:linear-gradient(180deg,rgba(255,255,255,.006),rgba(255,255,255,.002));color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;min-width:64px}
+    .helper-btn:active{transform:scale(.99)}
+    .amount-helpers{display:flex;gap:8px;margin-top:8px}
+
+    /* notify */
+    #notify{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--danger);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;z-index:150;opacity:0;pointer-events:none;transition:transform .22s ease-out,opacity .22s ease-out;box-shadow:0 12px 36px rgba(0,0,0,.6);display:inline-block}
+    #notify.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+
+    .pop-emoji{position:absolute;font-size:26px;line-height:1;transform:translateZ(0) scale(.6);animation:emojiPop 220ms ease-out forwards;pointer-events:none;will-change:transform,opacity;color:inherit;text-shadow:none;filter:none}
+    @keyframes emojiPop{0%{transform:translateZ(0) translateY(0) scale(.6);opacity:1}60%{transform:translateZ(0) translateY(-8px) scale(1.05);opacity:.9}100%{transform:translateZ(0) translateY(-22px) scale(1.3);opacity:0}}
+
+    .drop{position:absolute;top:-150px;width:70px;height:70px;pointer-events:auto;cursor:pointer;animation:rainDrop 1s linear forwards;will-change:transform;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));border-radius:12px;transition:transform .12s var(--easing),filter .12s var(--easing);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .drop:focus{outline:none;box-shadow:var(--focus-ring)}
+    @keyframes rainDrop {
+      0%   { transform:translateY(-30px) }
+      100% { transform:translateY(calc(100vh + 180px)) }
     }
-    .task-extra-claim-btn{
-      background:linear-gradient(90deg,#ffe161,#ffd700);
-      border:1px solid #cead23;
-      color:#222;
-      font-weight:bold;
-      font-family:monospace;
-      padding:8px 24px;
-      font-size:16px;
-      border-radius:10px;
-      margin-top:12px;
-      cursor:pointer;
-      animation:pulse 1s infinite alternate;
-      box-shadow:0 0 8px #fff3;
-      transition:.15s;
+    .drop:hover{transform:scale(1.04)}
+    .drop:active{transform:scale(.98);filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+
+    /* ====== كرت الإعلانات (Glass Card) ====== */
+    .ads-card{
+      margin:14px 0 18px;
+      padding:14px;
+      border-radius:14px;
+      background:linear-gradient(180deg,var(--glass-01),var(--glass-02));
+      border:1px solid var(--border-weak);
+      box-shadow:var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.02);
+      backdrop-filter:blur(var(--glass-blur)) saturate(120%);
+      -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(120%);
+      color:var(--text);
+    }
+    .ads-card-header{
+      display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.4px
+    }
+    .ads-counter{font-weight:900;color:var(--accent);font-size:15px}
+    .progress-bar{
+      width:100%;height:10px;border-radius:8px;
+      background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(255,255,255,.01));
+      overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.02);
+      position:relative;
+    }
+    .progress-bar.stripes::after{
+      content:"";
+      position:absolute;inset:0;background-image:linear-gradient(45deg, rgba(255,255,255,.03) 25%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 50%, rgba(255,255,255,.03) 50%, rgba(255,255,255,.03) 75%, rgba(0,0,0,0) 75%, rgba(0,0,0,0));
+      background-size:24px 24px;opacity:.12;pointer-events:none;
+    }
+    .progress-fill{
+      height:100%;border-radius:inherit;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      box-shadow:0 0 12px rgba(0,209,167,.18);
+      transition:width .35s var(--easing),box-shadow .25s linear;
+      will-change:width;
+    }
+    .progress-fill.pulse{box-shadow:0 0 30px rgba(0,209,167,.28),0 0 60px rgba(0,188,212,.14);animation:progressPulse 1.2s ease-in-out 2}
+    @keyframes progressPulse{0%{transform:scaleX(1)}50%{transform:scaleX(1.02)}100%{transform:scaleX(1)}}
+
+    .watch-ad-btn{
+      margin-top:10px;width:100%;font-size:13px;min-height:44px;
     }
 
-    .gift-toast{
-      position:fixed;
-      top:80px; left:50%;
-      transform:translateX(-50%) scale(0);
-      background:rgba(0,0,0,.85);
-      border:1px solid #ffe161;
-      border-radius:16px;
-      padding:20px 24px;
-      color:#ffe161;
-      font-size:17px;
-      font-family:monospace;
-      z-index:9999;
-      box-shadow:0 0 24px #ffe16188;
-      animation:pop .5s forwards;
-    }
-    @keyframes pop{to{transform:translateX(-50%) scale(1)}}
+    .ads-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+    .ads-remaining{font-weight:700;color:var(--muted);font-size:13px}
 
-    /* Loader screen */
-    #loader{
-      position:fixed;
-      inset:0;
-      background:#000;
-      z-index:4000;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-direction:column;
-      gap:12px;
-    }
-    .loader-circle{width:125px;height:125px;border-radius:50%;overflow:hidden;box-shadow:0 0 20px rgba(255,255,255,0.06)}
-    .loader-circle video{width:100%;height:100%;object-fit:cover;background:#000}
-    .loader-text{color:#fff;font-family:monospace;font-size:16px}
+    :focus{outline:none;box-shadow:0 12px 40px rgba(0,209,167,.10)}
+    @media(max-width:420px){.card-end p{font-size:36px}.panel{padding:18px;border-radius:16px}.bal-num{font-size:28px}#timerWrap,#scoreWrap{top:10px;padding:8px 12px;min-height:44px}#timerWrap span,#scoreWrap span{padding:6px 10px;min-width:40px}}
+    @media(max-width:480px){.drop{width:110px;height:110px}.btn{min-height:54px;padding:14px 18px}}
   </style>
 </head>
 <body>
+  <!-- HUD -->
+  <div id="timerWrap" role="status" aria-live="polite">Time <span id="timer">30</span></div>
+  <div id="scoreWrap" role="status" aria-live="polite">USDT <span id="usdtHud">0.0000</span></div>
 
-  <video id="bgVideo" muted loop playsinline preload="metadata" style="display:none;">
-    <source src="https://files.catbox.moe/4m82bh.mp4" type="video/mp4">
-  </video>
-
-  <div id="loader" aria-hidden="false">
-    <div class="loader-circle" id="loaderCircle">
-      <video id="loaderVideo" muted playsinline preload="metadata">
-        <source src="https://files.catbox.moe/kr88sx.mp4" type="video/mp4">
-      </video>
-    </div>
-    <div class="loader-text">Loading</div>
-  </div>
-
-  <div class="title-bar">
-    <img class="star-icon" src="https://web.duckystars.app/assets/star-GB1I2Iiq.png" alt="★" />
-    <span class="pencil-text">Telegram Gift</span>
-  </div>
-
-  <div class="row" id="giftsRow"></div>
-
-  <div style="display:flex;flex-direction:column;align-items:center;width:100%;justify-content:center;margin-top:auto;">
-    <div id="usernameUnderCircle" class="username-under-circle" title="Click to set username">@unknown</div>
-    <div class="video-circle" id="videoCircle">
-      <video muted loop playsinline preload="metadata" data-seq="1">
-        <source src="https://files.catbox.moe/sy0jjn.mp4" type="video/mp4">
-      </video>
-    </div>
-  </div>
-
-  <div class="bottom-bar">
-    <button onclick="openMyGiftsPage()">My Gift</button>
-    <button onclick="openTaskPage()">Task</button>
-    <button onclick="alert('Add Task ender dev')">Add Task</button>
-    <button onclick="openInvitePage()">Invite Friend</button>
-  </div>
-
-  <div id="myGiftsFullPage">
-    <div class="mygifts-header">
-      <h2>🎁 My Gifts</h2>
-      <button class="mygifts-close-btn" onclick="closeMyGiftsPage()">&times;</button>
-    </div>
-    <div class="mygifts-content">
-      <p>Here you can see all the gifts you collected!</p>
-      <div class="mygifts-list" id="mygiftsList"></div>
-    </div>
-  </div>
-
-  <div id="inviteFullPage">
-    <div class="invite-header">
-      <h2>👥 Invite Friends</h2>
-      <button class="invite-close-btn" onclick="closeInvitePage()">&times;</button>
-    </div>
-    <div class="invite-content">
-      <div class="invite-video-circle">
-        <video muted loop playsinline preload="metadata" data-seq="2">
-          <source src="https://files.catbox.moe/1i22tb.mp4" type="video/mp4">
-        </video>
+  <!-- Game Over Overlay -->
+  <div id="overlay" aria-hidden="true">
+    <div class="card-end" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+      <h2 id="endTitle">Game Over</h2>
+      <p id="usdtText">0.0000</p>
+      <div style="display:flex;justify-content:center;margin-top:8px">
+        <button id="restartBtn" class="btn" aria-label="Restart game">RESTART</button>
+        <button id="withdrawBtnOverlay" class="btn" aria-label="Open withdraw panel">Withdraw</button>
       </div>
-      <p>Share your personal link and earn rewards!</p>
-      
-      <div class="invite-link-container">
-        <div class="invite-link-box" id="inviteLink" contenteditable="false"></div> 
-        <button class="copy-btn" onclick="copyInviteLink()">Copy</button>
+    </div>
+  </div>
+
+  <!-- Withdraw Panel -->
+  <div id="withdrawPanel" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="withdrawTitle">
+      <h1 id="withdrawTitle">Withdraw USDT</h1>
+      <div class="balance" aria-live="polite" aria-atomic="true" role="status">
+        <div class="bal-num" id="balance">0.0000</div>
+        <div style="text-align:right;color:var(--muted);font-weight:700;font-size:13px">Confirmed locally</div>
       </div>
-      <div class="invite-stats">
-        <div class="stat-item">
-          <div class="stat-label">Active Invites</div>
-          <div class="stat-value" id="activeCount">0</div>
+
+      <!-- ====== كرت الإعلانات (Glass) ====== -->
+      <div class="ads-card" aria-label="Ads progress">
+        <div class="ads-card-header">
+          <span>Ad Progress</span>
+          <span class="ads-counter" aria-hidden="true"><span id="adsCurrent">0</span> / 1000</span>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">Pending Review</div>
-          <div class="stat-value" id="pendingCount">0</div>
+        <div class="progress-bar stripes" aria-hidden="true">
+          <div class="progress-fill" id="adsProgress" style="width:0%"></div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">Total Invites</div>
-          <div class="stat-value" id="totalCount">0</div>
+        <div class="ads-meta">
+          <div class="ads-remaining" id="adsRemaining" aria-live="polite">Remaining: 1000</div>
+          <div style="color:var(--muted);font-size:12px"><span id="groupProgress" aria-live="polite">Group: 0/3</span></div>
         </div>
+        <button id="watchAdBtn" class="btn watch-ad-btn" aria-label="Watch rewarded ad">Watch Ad</button>
+      </div>
+
+      <label for="bnbAddress">BNB Address</label>
+      <input id="bnbAddress" type="text" placeholder="0xAbC123... or bnb1xyz..." autocomplete="off" inputmode="text" aria-label="BNB address"/>
+      <label for="amount">Amount (USDT)</label>
+      <input id="amount" type="number" step="0.0001" min="0" placeholder="Enter amount" inputmode="decimal" aria-label="Withdrawal amount"/>
+      <div class="amount-helpers" aria-hidden="false" style="margin-bottom:4px">
+        <button id="useMaxBtn" class="helper-btn" type="button" aria-label="Use maximum available balance">Use Max</button>
+        <button id="add2Btn" class="helper-btn" type="button" aria-label="Add 2 USDT to amount">+2</button>
+        <button id="add5Btn" class="helper-btn" type="button" aria-label="Add 5 USDT to amount">+5</button>
+      </div>
+
+      <div class="row">
+        <button id="withdrawDoBtn" class="btn" aria-label="Submit withdrawal request">Withdraw Request</button>
+        <button id="backToGameBtn" class="btn ghost" aria-label="Back to game">Back</button>
       </div>
     </div>
   </div>
 
-  <div id="taskFullPage">
-    <div class="task-header">
-      <h2>📋 Task</h2>
-      <button class="task-close-btn" onclick="closeTaskPage()">&times;</button>
-    </div>
-    <div class="task-content">
-
-      <!-- مهمة الدب الأصلية -->
-      <div class="task-progress-card">
-        <img src="https://giftgogame.com/static/thumbnails/5170233102089322756.webp" alt="🧸">
-        <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskNextTarget">50</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚎𝚊𝚛</span>
-      </div>
-      <div class="task-progress-bar" id="taskProgressBarContainer" style="display:block">
-        <div class="task-progress-bar-inner" id="taskProgressBar" style="width:0%"></div>
-      </div>
-      <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskProgressText">0/50</p>
-      <button class="task-claim-btn" id="taskClaimBtn" style="display:none" onclick="claimBearGift()">CLAIM 𝙱𝚎𝚊𝚛</button>
-
-      <!-- مهمة 15 إحالة دب -->
-      <div class="task-extra-card">
-        <img src="https://giftgogame.com/static/thumbnails/5170233102089322756.webp" alt="🧸">
-        <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskBear15Target">15</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚎𝚊𝚛</span>
-      </div>
-      <div class="task-progress-bar" id="taskBear15ProgressBarContainer" style="display:block">
-        <div class="task-progress-bar-inner" id="taskBear15ProgressBar" style="width:0%"></div>
-      </div>
-      <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskBear15ProgressText">0/15</p>
-      <button class="task-extra-claim-btn" id="taskBear15ClaimBtn" style="display:none" onclick="claimBear15Gift()">CLAIM 𝙱𝚎𝚊𝚛</button>
-
-      <!-- مهمة 35 إحالة بوكس -->
-      <div class="task-extra-card">
-        <img src="https://giftgogame.com/static/thumbnails/5170250947678437525.webp" alt="📦">
-        <span>𝚁𝚎𝚏𝚎𝚛 <span id="taskBox35Target">35</span> 𝚏𝚛𝚒𝚎𝚗𝚍𝚜 𝚝𝚘 𝚎𝚊𝚛𝚗 𝚊 𝙱𝚘𝚡</span>
-      </div>
-      <div class="task-progress-bar" id="taskBox35ProgressBarContainer" style="display:block">
-        <div class="task-progress-bar-inner" id="taskBox35ProgressBar" style="width:0%"></div>
-      </div>
-      <p style="color:#aaa;font-size:14px;margin-top:6px;font-family:monospace" id="taskBox35ProgressText">0/35</p>
-      <button class="task-extra-claim-btn" id="taskBox35ClaimBtn" style="display:none" onclick="claimBox35Gift()">CLAIM 𝙱𝚘𝚡</button>
-
-      <div class="channel-task-card">
-        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" alt="📢">
-        <span>Join our channel to earn rewards!</span>
-      </div>
-      <button class="channel-join-btn" onclick="window.open('https://t.me/botbababab','_blank')">Join Channel</button>
-    </div>
-  </div>
-
-  <div id="modal" class="modal" style="display:none">
-    <div class="modal-content">
-      <button class="close-btn">&times;</button>
-      <h3 id="modal-title"></h3>
-      <p id="modal-body"></p>
-    </div>
-  </div>
-
-  <audio id="bgMusic" loop>
-    <source src="https://files.catbox.moe/xiwl1m.mp3" type="audio/mpeg">
-  </audio>
+  <!-- Toast Notifications -->
+  <div id="notify" role="status" aria-live="polite"></div>
 
   <script>
-    /*******************************
-     * إعدادات ومتغيرات عامة
-     *******************************/
-    // تم تحديث هذا الثابت ليعكس متطلبات الإحالة النشطة (20 إعلاناً)
-    const REQUIRED_ACTIVE_INVITES = 10; 
-    const TASK_INVITES_PER_LEVEL = 50; 
-    
-    // ثابت جديد: عدد الإعلانات التي يجب على المستخدم المُحال مشاهدتها ليعتبر 'Active'
-    const REQUIRED_ADS_TO_ACTIVATE_INVITE = 20; 
+    (function(){
+      const imgURL='https://files.catbox.moe/d30psp.png';
+      const emojis=['💥','🎉','✨','🔥','⚡','💫','⭐','🌟'];
+      const MIN_WITHDRAW = 2.00;
+      const REQUIRED_ADS = 1000;
+      const GROUP_SIZE = 3; // require watching 3 ads sequentially before incrementing adsWatched by 1
 
-    const loaderEl = document.getElementById('loader');
-    const loaderVideo = document.getElementById('loaderVideo');
-    const bgVideo = document.getElementById('bgVideo');
-    const bgMusic = document.getElementById('bgMusic'); // يجب تشغيلها بناءً على تفاعل المستخدم
+      let usdt = parseFloat(localStorage.getItem('usdt')||'0') || 0;
+      let gameActive = true;
+      let timeLeft = 30;
+      let timerEl, usdtHud, overlay, usdtText;
+      let spawnInterval, countDown;
 
-    const tg = window.Telegram?.WebApp || {};
-    const tgUser = tg.initDataUnsafe?.user || null;
-    let lastClaimDateFromApi = null; // تخزين تاريخ آخر سحب من السيرفر
+      const withdrawPanel = document.getElementById('withdrawPanel');
+      const balanceEl = document.getElementById('balance');
+      const addrEl = document.getElementById('bnbAddress');
+      const amtEl = document.getElementById('amount');
+      const withdrawDoBtn = document.getElementById('withdrawDoBtn');
+      const backToGameBtn = document.getElementById('backToGameBtn');
+      const notifyEl = document.getElementById('notify');
 
-    /*******************************
-     * دالة fetchApi موحدة
-     *******************************/
-    async function fetchApi({ type, data }) {
-      try {
-        const res = await fetch('/api', { 
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, ...data })
-        });
-        const json = await res.json().catch(() => null);
-        return { ok: res.ok, status: res.status, data: json };
-      } catch (e) {
-        return { ok: false, error: e.message || String(e) };
-      }
-    }
+      const timerWrapEl = document.getElementById('timerWrap');
+      const scoreWrapEl = document.getElementById('scoreWrap');
 
-    /*******************************
-     * بيانات الهدايا وحالة التطبيق
-     *******************************/
-    const giftsData = {
-      bear:  {id:1, en:'Bear', ar:'دب',   icon:'🧸', ads:200, inv:5, img:"https://giftgogame.com/static/thumbnails/5170233102089322756.webp", stars:15},
-      heart: {id:2, en:'Heart',ar:'قلب',  icon:'💖', ads:250, inv:10,img:"https://giftgogame.com/static/thumbnails/5170145012310081615.webp",stars:15},
-      box:   {id:3, en:'Box',  ar:'صندوق',icon:'🎁', ads:350, inv:10,img:"https://giftgogame.com/static/thumbnails/5170250947678437525.webp",stars:25},
-      rose:  {id:4, en:'Rose', ar:'وردة', icon:'🌹', ads:350, inv:20,img:"https://giftgogame.com/static/thumbnails/5168103777563050263.webp",stars:25}
-    };
-    let myGifts = { bear:0, heart:0, box:0, rose:0 };
-    let myGiftDates = {}; 
-    let adCounters = {}; 
-    let canClaim = { bear:false, heart:false, box:false, rose:false };
-    let inviteStats = { total:0, active:0, pending:0 };
-    let bearTaskLevel = 0;
+      // ====== Helper Buttons ======
+      const useMaxBtn = document.getElementById('useMaxBtn');
+      const add2Btn = document.getElementById('add2Btn');
+      const add5Btn = document.getElementById('add5Btn');
 
-    // مستويات المهام الإضافية
-    let bear15TaskLevel = 0;
-    let box35TaskLevel = 0;
-    
-    // تهيئة العدادات ومتطلبات الإعلانات
-    Object.keys(giftsData).forEach(key => {
-        adCounters[key] = giftsData[key].ads;
-    });
+      // ====== Ad System Elements ======
+      const adsCurrentEl = document.getElementById('adsCurrent');
+      const adsProgressEl = document.getElementById('adsProgress');
+      const watchAdBtn = document.getElementById('watchAdBtn');
+      const adsRemainingEl = document.getElementById('adsRemaining');
+      const groupProgressEl = document.getElementById('groupProgress');
 
-    /*******************************
-     * toast helper
-     *******************************/
-    function showToast(message, type = 'success', timeout = 3000) {
-      const t = document.createElement('div');
-      t.className = 'toast' + (type === 'error' ? ' error' : '');
-      t.innerHTML = `<span class="check">${type === 'success' ? '✓' : '!'}</span><div>${message}</div>`;
-      document.body.appendChild(t);
-      setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(6px)'; }, timeout - 300);
-      setTimeout(() => t.remove(), timeout);
-    }
-
-    /*******************************
-     * تهيئة اسم المستخدم
-     *******************************/
-    function updateUsernameDisplay() {
-      const usernameElem = document.getElementById('usernameUnderCircle');
-      if (tgUser && tgUser.username) {
-        usernameElem.textContent = '@' + tgUser.username;
-        localStorage.setItem('fallback_username', tgUser.username);
-      } else {
-        const fallback = localStorage.getItem('fallback_username') || "unknown";
-        usernameElem.textContent = '@' + fallback;
-      }
-    }
-    function getDisplayedUsername(){
-      if (tgUser && tgUser.username) return tgUser.username;
-      const local = localStorage.getItem('fallback_username');
-      return local ? local : 'unknown';
-    }
-
-    /*******************************
-     * Loader: تشغيل الفيديو بعد أن يكون جاهزًا لتفادي التهنيج
-     *******************************/
-    function showLoaderThenInit() {
-      let played = false;
-      const onReady = () => {
-        if (played) return;
-        played = true;
-        loaderVideo.play().catch(()=>{});
-        setTimeout(() => {
-          if (loaderEl) {
-            loaderEl.style.display = 'none';
-            loaderEl.setAttribute('aria-hidden', 'true');
-          }
-          initApp();
-        }, 7000);
-      };
-
-      if (loaderVideo.readyState >= 2) {
-        onReady();
-      } else {
-        loaderVideo.addEventListener('loadeddata', onReady, { once: true });
-        setTimeout(() => { if (!played) onReady(); }, 3000);
-      }
-    }
-
-    /*******************************
-     * تحكم في رؤية الفيديو وتعليقها عند الاختفاء
-     *******************************/
-    let videoObserver = null;
-    function initVideoVisibilityController() {
-      const videos = Array.from(document.querySelectorAll('video'));
-      if (!('IntersectionObserver' in window) || videos.length === 0) {
-        videos.forEach(v => { try { v.pause(); } catch(e){} });
-        return;
-      }
-      if (videoObserver) videoObserver.disconnect();
-      videoObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          const vid = entry.target;
-          const isVisible = entry.intersectionRatio >= 0.25;
-          if (isVisible) {
-            if (vid.dataset.seq || vid.dataset.autoplay) vid.play().catch(()=>{});
-          } else {
-            try { vid.pause(); } catch(e){}
-          }
-        });
-      }, { threshold: [0.25], rootMargin: "0px 0px -10% 0px" });
-      videos.forEach(v => videoObserver.observe(v));
-    }
-
-    /*******************************
-     * تشغيل فيديوات الدوائر واحداً تلو الآخر لتخفيف ضغط الشبكة
-     *******************************/
-    async function startCircleVideosSequentially() {
-      const seqVideos = Array.from(document.querySelectorAll('video[data-seq]'))
-        .sort((a,b) => (Number(a.dataset.seq)||0) - (Number(b.dataset.seq)||0));
-      for (let i = 0; i < seqVideos.length; i++) {
-        const v = seqVideos[i];
-        await new Promise(res => setTimeout(res, 400 + (i * 150)));
-        try { await v.play(); } catch(e){}
-      }
-    }
-
-    /*******************************
-     * دوال اد (SDK)
-     *******************************/
-    function showRewardedAdViaSDK() {
-      if (typeof window.show_10245709 === 'function') {
-        return window.show_10245709().then(() => true).catch(() => false);
-      } else {
-        // محاكاة لغرض الاختبار إذا لم يتم تحميل SDK
-        return new Promise(resolve => setTimeout(() => resolve(true), 1200));
-      }
-    }
-
-    const adBtnState = {}; 
-
-    async function watchAdForGift(key, btnEl) {
-      if (!btnEl) btnEl = document.querySelector(`.ad-btn[data-key="${key}"]`);
-      if (!btnEl) return;
-      if (adBtnState[key]) return;
-      
-      const userId = tgUser?.id ? String(tgUser.id) : null;
-      if (!userId) {
-          showToast('User not initialized. Please reopen the app.', 'error', 3000);
-          return;
-      }
-
-      adBtnState[key] = true;
-      btnEl.classList.add('disabled');
-      btnEl.setAttribute('aria-disabled', 'true');
-
-      let firstOk = false;
-      let secondOk = false;
-
-      try {
-        // --- Ad 1 ---
-        showToast('Loading ad 1...', 'success', 1800);
-        firstOk = await showRewardedAdViaSDK();
-        if (!firstOk) {
-          showToast('Ad 1 failed or skipped', 'error', 2500);
-          return;
+      // ====== Ad Counter Logic ======
+      let adsWatched = parseInt(localStorage.getItem('adsWatched')||'0',10);
+      function saveAds(){ localStorage.setItem('adsWatched', adsWatched); }
+      function updateAdUI(){
+        adsCurrentEl.textContent = adsWatched;
+        const pct = Math.min(adsWatched / REQUIRED_ADS, 1) * 100;
+        adsProgressEl.style.width = pct + '%';
+        withdrawDoBtn.disabled = adsWatched < REQUIRED_ADS;
+        const remaining = Math.max(REQUIRED_ADS - adsWatched, 0);
+        adsRemainingEl.textContent = remaining > 0 ? 'Remaining: ' + remaining : 'Completed — Withdrawals Unlocked';
+        if(adsWatched >= REQUIRED_ADS){
+          adsProgressEl.classList.add('pulse');
+          withdrawDoBtn.classList.add('celebrate');
+          setTimeout(()=> adsProgressEl.classList.remove('pulse'), 2500);
         } else {
-          showToast('Ad 1 completed', 'success', 1300);
+          adsProgressEl.classList.remove('pulse');
+          withdrawDoBtn.classList.remove('celebrate');
         }
-
-        // --- Ad 2 ---
-        showToast('Loading ad 2...', 'success', 1800);
-        secondOk = await showRewardedAdViaSDK();
-        if (!secondOk) {
-          showToast('Ad 2 failed or skipped', 'error', 2500);
-          return;
-        } else {
-          showToast('Ad 2 completed', 'success', 1300);
+        if (!currentGroupActive) {
+          groupProgressEl.textContent = 'Group: 0/' + GROUP_SIZE;
         }
+      }
 
-        // --- Save to Server & Update State ---
-        const res = await fetchApi({ type: 'watch-ad', data: { giftId: key, userId } });
-
-        if (!res.ok) {
-          showToast('Failed to save ad count to server. Your views may not be counted.', 'error', 3500);
-          return;
+      function flashBalance(){
+        balanceEl.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.04)' },
+          { transform: 'scale(1)' }
+        ], { duration: 360, easing: 'ease-out' });
+        const hud = document.getElementById('usdtHud');
+        if (hud) {
+          hud.animate([
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.06)' },
+            { transform: 'scale(1)' }
+          ], { duration: 360, easing: 'ease-out' });
         }
+      }
 
-        // تحديث الحالة من السيرفر بعد تسجيل المشاهدة
-        await loadUserState();
-        // تحديث إحصائيات الدعوات أيضاً للتأثير على حالة 'pending'
-        await updateInviteStats(); 
-        renderGiftsRow();
-        showToast('Ad views recorded and state refreshed.', 'success', 2200);
+      // ====== Rewarded Ad via libtl (GROUP_SIZE sequential ads per increment) ======
+      let currentGroupCount = 0;
+      let currentGroupActive = false;
 
-      } finally {
-        setTimeout(() => {
-          adBtnState[key] = false;
-          const el = document.querySelector(`.ad-btn[data-key="${key}"]`);
-          // فقط قم بإزالة التعطيل إذا لم تكن الهدية جاهزة للمطالبة الآن
-          if (el && !canClaim[key]) {
-            el.classList.remove('disabled');
-            el.removeAttribute('aria-disabled');
+      function setGroupProgress(n){
+        currentGroupCount = n;
+        groupProgressEl.textContent = 'Group: ' + currentGroupCount + '/' + GROUP_SIZE;
+      }
+
+      async function playRewardedAd(){
+        if (adsWatched >= REQUIRED_ADS) { notify('Ads requirement already completed'); return; }
+        if (currentGroupActive) { notify('Already loading ads...'); return; }
+
+        currentGroupActive = true;
+        watchAdBtn.disabled = true;
+        const antiClickTimer = setTimeout(()=> { watchAdBtn.disabled = false; }, 3000);
+
+        const originalText = watchAdBtn.textContent;
+        setGroupProgress(0);
+        try{
+          for (let i = 1; i <= GROUP_SIZE; i++){
+            watchAdBtn.textContent = 'Ad ' + i + '/' + GROUP_SIZE + ' — Loading...';
+            setGroupProgress(i-1);
+            await show_10245709();
+            setGroupProgress(i);
+            adsProgressEl.classList.add('pulse');
+            setTimeout(()=> adsProgressEl.classList.remove('pulse'), 300);
           }
-        }, 1200);
-      }
-    }
-
-    /*******************************
-     * يومين بين السحوبات (تعتمد على lastClaimDateFromApi)
-     *******************************/
-    function nextClaimAllowed() {
-      if (!lastClaimDateFromApi) return true;
-      const last = new Date(lastClaimDateFromApi);
-      const now = new Date();
-      // تحقق بالملي ثانية للتأكد من مرور 48 ساعة كاملة
-      const diffHours = (now.getTime() - last.getTime()) / (60 * 60 * 1000);
-      return diffHours >= 48; 
-    }
-    
-    function getRemainingTime() {
-      if (!lastClaimDateFromApi) return '';
-      const last = new Date(lastClaimDateFromApi);
-      const now = new Date();
-      const diffHours = (now.getTime() - last.getTime()) / (60 * 60 * 1000);
-      
-      if (diffHours >= 48) return '';
-      
-      const totalRemainingMillis = 48 * 60 * 60 * 1000 - (now.getTime() - last.getTime());
-
-      // تحويل المتبقي إلى أيام وساعات
-      const remainingHours = Math.ceil(totalRemainingMillis / (60 * 60 * 1000));
-      const remainingDays = Math.floor(remainingHours / 24);
-      const hours = remainingHours % 24;
-      
-      let message = 'You must wait ';
-      if (remainingDays > 0) message += `${remainingDays} day${remainingDays > 1 ? 's' : ''} and `;
-      message += `${hours} hour${hours > 1 ? 's' : ''} before the next claim.`;
-      
-      return message;
-    }
-
-    /*******************************
-     * إرسال طلب سحب إلى الباكند
-     *******************************/
-    async function handleClaim(gift) {
-      if (!nextClaimAllowed()) {
-        showToast(getRemainingTime(), 'error');
-        return;
-      }
-      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
-        return;
-      }
-
-      const d = giftsData[gift];
-      const username = getDisplayedUsername();
-      const userId   = tgUser?.id ? String(tgUser.id) : null;
-
-      if (!userId) { showToast('User not initialized. Please reopen the app.', 'error'); return; }
-
-      // طلب السحب
-      const res = await fetchApi({ type: 'claim', data: { giftId: gift, userId } });
-      
-      if (!res.ok) {
-        const msg = res.data && res.data.message ? res.data.message : 'Claim request failed. Try again later.';
-        showToast(msg, 'error');
-        return;
-      }
-      
-      // تحديث الحالة بالكامل بعد السحب لضمان التزامن
-      await loadUserState(); 
-      renderGiftsRow();
-      showToast(`🎁 Gift ${d.en} claimed successfully!`, 'success');
-
-      await sendToBot(d.ar, username, userId);
-    }
-
-    async function sendToBot(giftAr, username, userId) {
-      const BOT_TOKEN = "7953029096:AAFYRODQ7YhvG2gJAgdmlbB5iSfICbvsBp0";
-      const CHAT_ID = "5640479009";
-      const msg = `🎁 New Gift Claimed!\n\nUser: @${username} (ID: ${userId})\nGift: ${giftAr}\nDate: ${new Date().toLocaleString()}`;
-      try {
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `chat_id=${encodeURIComponent(CHAT_ID)}&text=${encodeURIComponent(msg)}`
-        });
-      } catch (err) {
-        console.error("Failed to notify bot:", err);
-      }
-    }
-
-    /*******************************
-     * بناء واجهة الهدايا 
-     *******************************/
-    function renderGiftsRow(){
-      const row = document.getElementById('giftsRow');
-      row.innerHTML = '';
-      Object.keys(giftsData).forEach(key=>{
-        const g = giftsData[key];
-        let card = document.createElement('div'); card.className = "card";
-        let btn = document.createElement('button'); btn.className = "btn-img"; btn.dataset.gift = key;
-        btn.innerHTML = `<img src="${g.img}" alt="${key}" loading="lazy">`;
-        btn.onclick = ()=> showGiftToast(key);
-        card.appendChild(btn);
-
-        let starRow = document.createElement('div'); starRow.className = "stars-row";
-        starRow.innerHTML = `<img class="star" src="https://web.duckystars.app/assets/star-GB1I2Iiq.png" alt="★"><span>${g.stars}</span>`;
-        card.appendChild(starRow);
-
-        let btnWrap = document.createElement('div');
-        btnWrap.style.width="100%"; btnWrap.style.display="flex"; btnWrap.style.justifyContent="center"; btnWrap.style.marginTop = "2px";
-
-        if (canClaim[key]) {
-          let claim = document.createElement('button'); 
-          claim.className = "claim-btn"; 
-          claim.textContent = "CLAIM";
-          claim.onclick = () => {
-            if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
-            if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-              showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
-              return;
-            }
-            handleClaim(key);
-          };
-          btnWrap.appendChild(claim);
-        } else {
-          let adBtn = document.createElement('button');
-          adBtn.className = "ad-btn"; 
-          adBtn.dataset.key = key; 
-          // عرض العداد المتبقي
-          adBtn.innerHTML = toDigits(adCounters[key]);
-          adBtn.onclick = function(){
-            if (adBtnState[key]) return;
-            watchAdForGift(key, adBtn);
-          };
-          btnWrap.appendChild(adBtn);
+          adsWatched = Math.min(adsWatched + 1, REQUIRED_ADS);
+          saveAds();
+          updateAdUI();
+          notify('Ad completed');
+          adsProgressEl.classList.add('pulse');
+          setTimeout(()=> adsProgressEl.classList.remove('pulse'), 900);
+        }catch(e){
+          notify('Ad not completed, please try again.');
+        }finally{
+          currentGroupActive = false;
+          watchAdBtn.textContent = originalText;
+          setGroupProgress(0);
         }
-        card.appendChild(btnWrap);
-        row.appendChild(card);
+      }
+      watchAdBtn.addEventListener('click', playRewardedAd);
+
+      const format = v => (Number.isFinite(v) ? v.toFixed(4) : '0.0000');
+      function saveUSDT(){ localStorage.setItem('usdt', usdt.toFixed(4)); }
+
+      function notify(msg){
+        notifyEl.textContent = msg;
+        notifyEl.classList.add('show');
+        notifyEl.setAttribute('aria-hidden','false');
+        setTimeout(()=> {
+          notifyEl.classList.remove('show');
+          notifyEl.setAttribute('aria-hidden','true');
+        }, 2500);
+      }
+
+      function init(){
+        gameActive=true; timeLeft=30;
+        timerEl = document.getElementById('timer');
+        usdtHud = document.getElementById('usdtHud');
+        overlay = document.getElementById('overlay');
+        usdtText = document.getElementById('usdtText');
+        usdtHud.textContent = format(usdt);
+        overlay.classList.remove('show');
+        document.querySelectorAll('.drop').forEach(d=>d.remove());
+        clearInterval(countDown);
+        countDown = setInterval(()=>{
+          timeLeft--;
+          timerEl.textContent = timeLeft;
+          if(timeLeft<=0){ clearInterval(countDown); endGame(); }
+        },1000);
+        clearInterval(spawnInterval);
+        spawnInterval = setInterval(()=>{
+          if(!gameActive){ clearInterval(spawnInterval); return; }
+          spawn();
+        },220);
+      }
+
+      function endGame(){
+        gameActive=false;
+        usdtText.textContent = format(usdt);
+        overlay.classList.add('show');
+        clearInterval(spawnInterval);
+        saveUSDT();
+      }
+
+      async function spawn(){
+        if(!gameActive) return;
+        const d = document.createElement('img');
+        d.className = 'drop';
+        d.setAttribute('alt','collectible');
+        d.setAttribute('role','button');
+        d.tabIndex = 0;
+        try{
+          const res = await fetch(imgURL);
+          const blob = await res.blob();
+          d.src = URL.createObjectURL(blob);
+        }catch{
+          d.src = imgURL;
+        }
+        d.style.left = Math.random()*100 + '%';
+        d.style.animationDuration = (Math.random()*0.4 + 1.4) + 's';
+        d.addEventListener('click', function boom(e){
+          if(!gameActive) return;
+          usdt += 0.005;
+          usdt = Math.floor(usdt * 10000) / 10000;
+          usdtHud.textContent = format(usdt);
+          saveUSDT();
+          const emoji = document.createElement('div');
+          emoji.className = 'pop-emoji';
+          emoji.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+          emoji.style.left = (e.clientX - 16) + 'px';
+          emoji.style.top = (e.clientY - 16) + 'px';
+          document.body.appendChild(emoji);
+          setTimeout(()=>emoji.remove(),400);
+          flashBalance();
+          this.remove();
+        });
+        d.addEventListener('keydown', function(e){
+          if(!gameActive) return;
+          if(e.key === 'Enter' || e.key === ' '){
+            e.preventDefault();
+            this.click();
+          }
+        });
+        document.body.appendChild(d);
+        d.addEventListener('animationend', ()=>d.remove());
+      }
+
+      function openWithdraw(){
+        overlay.classList.remove('show');
+        usdt = parseFloat(localStorage.getItem('usdt')||'0') || 0;
+        balanceEl.textContent = format(usdt);
+        usdtHud.textContent = format(usdt);
+        addrEl.value = '';
+        amtEl.value = '';
+        updateAdUI();
+        withdrawPanel.classList.add('show');
+        withdrawPanel.setAttribute('aria-hidden','false');
+        timerWrapEl.style.display = 'none';
+        scoreWrapEl.style.display = 'none';
+        setTimeout(()=> addrEl.focus(),120);
+      }
+
+      function closeWithdraw(){
+        withdrawPanel.classList.remove('show');
+        withdrawPanel.setAttribute('aria-hidden','true');
+        if(!gameActive) overlay.classList.add('show');
+        timerWrapEl.style.display = '';
+        scoreWrapEl.style.display = '';
+        setTimeout(()=> document.getElementById('withdrawBtnOverlay').focus(),120);
+      }
+
+      function validateAddress(a){
+        if(!a) return false;
+        a = a.trim();
+        const re0x = /^0x[a-fA-F0-9]{40}$/;
+        const rebnb = /^bnb[0-9a-z]{38,}$/i;
+        return re0x.test(a) || rebnb.test(a);
+      }
+
+      withdrawDoBtn.addEventListener('click', ()=>{
+        if(usdt < MIN_WITHDRAW){ notify('Insufficient balance'); return; }
+        if(adsWatched < REQUIRED_ADS){ notify('Please complete 1000 ads first'); return; }
+        const addr = addrEl.value.trim();
+        if(!validateAddress(addr)){ notify('Invalid BNB address'); addrEl.focus(); return; }
+        let amt = parseFloat(amtEl.value || '0') || 0;
+        if(Number.isNaN(amt) || amt <= 0){ notify('Enter valid amount'); amtEl.focus(); return; }
+        amt = Math.floor(amt * 10000)/10000;
+        if(amt < MIN_WITHDRAW){ notify('Minimum withdrawal 2 USDT'); amtEl.focus(); return; }
+        if(amt > usdt + 0.0000001){ notify('Amount exceeds balance'); amtEl.focus(); return; }
+
+        const withdrawals = JSON.parse(localStorage.getItem('withdrawals')||'[]');
+        withdrawals.push({id:'wd_'+Date.now(), address:addr, amount:amt.toFixed(4), timestamp:new Date().toISOString(), status:'pending'});
+        localStorage.setItem('withdrawals', JSON.stringify(withdrawals));
+        usdt = Math.max(0, Math.floor((usdt - amt) * 10000)/10000);
+        saveUSDT();
+        usdtHud.textContent = format(usdt);
+        balanceEl.textContent = format(usdt);
+        flashBalance();
+        notify('Withdrawal saved locally');
       });
-    }
 
-    function toDigits(n){
-      return String(n).split('').map(ch=>{
-        const map={'0':'𝟶','1':'𝟷','2':'𝟸','3':'𝟹','4':'𝟺','5':'𝟻','6':'𝟼','7':'𝟽','8':'𝟾','9':'𝟿'};
-        return map[ch]||ch;
-      }).join('');
-    }
-
-    /*******************************
-     * دوال النسخ (Copy Link)
-     *******************************/
-    function copyInviteLink() {
-        const linkElement = document.getElementById('inviteLink');
-        const link = linkElement ? linkElement.textContent.trim() : null;
-
-        if (link) {
-            // استخدام واجهة Clipboard API الحديثة
-            navigator.clipboard.writeText(link).then(() => {
-                showToast('Invitation link copied automatically! 🎉', 'success', 2500);
-            }).catch(err => {
-                // حل احتياطي إذا فشل الـ API
-                fallbackCopyTextToClipboard(link);
-            });
-        } else {
-            showToast('Cannot generate or find the invitation link.', 'error', 3000);
-        }
-    }
-
-    // وظيفة النسخ الاحتياطية (للمتصفحات القديمة أو إذا فشل writeText)
-    function fallbackCopyTextToClipboard(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";  // تجعلها خارج الشاشة
-        textArea.style.opacity = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-                showToast('Invitation link copied automatically! 🎉', 'success', 2500);
-            } else {
-                showToast('Failed to copy the link. Please copy it manually.', 'error', 4000);
-            }
-        } catch (err) {
-            showToast('Failed to copy the link. Please copy it manually.', 'error', 4000);
-        }
-
-        document.body.removeChild(textArea);
-    }
-    /*******************************
-     * صفحات، مهمة، دعوات
-     *******************************/
-    function openMyGiftsPage(){
-      const list = document.getElementById('mygiftsList'); list.innerHTML = '';
-      let anyGift = false;
-      
-      Object.keys(myGifts).forEach(key=>{
-        if (myGifts[key] > 0) {
-          anyGift = true;
-          const lastDate = myGiftDates[key] || 'N/A';
-          list.innerHTML += `<div class="mygifts-item">
-            <img src="${giftsData[key].img}" alt="${giftsData[key].en}" loading="lazy">
-            <div class="mygifts-label">${giftsData[key].en}</div>
-            <div style="color:#fff;font-size:13px;margin-top:6px;">x${myGifts[key]}</div>
-            <div class="mygifts-date">Last claimed: ${lastDate}</div>
-          </div>`;
-        }
+      useMaxBtn.addEventListener('click', function(){
+        amtEl.value = usdt.toFixed(4);
+        amtEl.focus();
       });
-      if(!anyGift){ list.innerHTML = '<div style="color:#888;font-size:16px;margin:60px auto;">No gifts yet</div>'; }
-      document.getElementById('myGiftsFullPage').style.display = 'flex';
-      document.body.style.overflow = "hidden";
-    }
-    function closeMyGiftsPage(){ document.getElementById('myGiftsFullPage').style.display = 'none'; document.body.style.overflow = ""; }
+      add2Btn.addEventListener('click', function(){
+        let cur = parseFloat(amtEl.value || '0') || 0;
+        cur = Math.floor((cur + 2) * 10000)/10000;
+        amtEl.value = cur.toFixed(4);
+        amtEl.focus();
+      });
+      add5Btn.addEventListener('click', function(){
+        let cur = parseFloat(amtEl.value || '0') || 0;
+        cur = Math.floor((cur + 5) * 10000)/10000;
+        amtEl.value = cur.toFixed(4);
+        amtEl.focus();
+      });
 
-    async function openInvitePage(){
-      const userId = tgUser?.id || 'unknown';
-      const botUsername = 'Qyyyyya_bot'; // تأكد من اسم البوت
-      const link = `https://t.me/${botUsername}/earn?startapp=ref_${userId}`;
-      
-      // وضع رابط الإحالة ليتم عرضه ونسخه
-      document.getElementById('inviteLink').textContent = link;
+      document.getElementById('restartBtn').addEventListener('click', ()=>{ clearInterval(countDown); clearInterval(spawnInterval); init(); });
+      document.getElementById('withdrawBtnOverlay').addEventListener('click', ()=> openWithdraw());
+      backToGameBtn.addEventListener('click', closeWithdraw);
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && withdrawPanel.classList.contains('show')) closeWithdraw(); });
+      document.body.addEventListener('pointerdown', ()=>{ const a=new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYWN0BAAAAG90aGVy'); a.volume=.08; a.play().catch(()=>{}); });
+      document.addEventListener('DOMContentLoaded', ()=>{ init(); updateAdUI(); });
 
-      // تحديث إحصائيات الدعوات
-      await updateInviteStats();
-      
-      document.getElementById('totalCount').textContent   = inviteStats.total;
-      document.getElementById('activeCount').textContent  = inviteStats.active;
-      document.getElementById('pendingCount').textContent = inviteStats.pending;
-      document.getElementById('inviteFullPage').style.display = 'flex';
-      document.body.style.overflow = "hidden";
-    }
-    function closeInvitePage(){ document.getElementById('inviteFullPage').style.display = 'none'; document.body.style.overflow = ""; }
-    
-    async function updateInviteStats() {
-      const userId = tgUser?.id || 'unknown';
-      // يتم جلب total, active, pending من الـ API حيث يتم احتسابهم بناءً على 20 إعلاناً
-      const res = await fetchApi({ type: 'invite-stats', data: { userId } });
-      if (res.ok && res.data) {
-        inviteStats.total = res.data.total ?? inviteStats.total;
-        inviteStats.active = res.data.active ?? inviteStats.active;
-        inviteStats.pending = res.data.pending ?? inviteStats.pending;
-      }
-    }
+      updateAdUI();
 
-    async function openTaskPage(){
-      // تحديث الإحصائيات قبل عرض صفحة المهمة
-      await updateInviteStats(); 
-      updateTaskProgress();
-      updateBear15TaskProgress();
-      updateBox35TaskProgress();
-      document.getElementById('taskFullPage').style.display = 'flex';
-      document.body.style.overflow = "hidden";
-    }
-    function closeTaskPage(){ document.getElementById('taskFullPage').style.display = 'none'; document.body.style.overflow = ""; }
+      document.getElementById('withdrawBtnOverlay').addEventListener('focus', ()=>{
+        const withdrawals = JSON.parse(localStorage.getItem('withdrawals')||'[]');
+        if(withdrawals.length) notify('You have ' + withdrawals.length + ' saved withdrawal(s).');
+      });
 
-    function updateTaskProgress(){
-      // ... منطق مهمة الدب ...
-      const totalUsedInvites = bearTaskLevel * TASK_INVITES_PER_LEVEL; 
-      const cumulativeTarget = totalUsedInvites + TASK_INVITES_PER_LEVEL; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      const percent = (currentLevelProgress / TASK_INVITES_PER_LEVEL) * 100;
-      
-      const progressBarContainer = document.getElementById('taskProgressBarContainer');
-      const progressBar = document.getElementById('taskProgressBar');
-      const progressText = document.getElementById('taskProgressText');
-      const claimBtn = document.getElementById('taskClaimBtn');
-      const nextTargetSpan = document.getElementById('taskNextTarget');
+      let holdTimer;
+      const scoreWrap = document.getElementById('scoreWrap');
+      scoreWrap.addEventListener('pointerdown', (e)=>{
+        holdTimer = setTimeout(()=> {
+          openWithdraw();
+        }, 650);
+      });
+      scoreWrap.addEventListener('pointerup', ()=> clearTimeout(holdTimer));
+      scoreWrap.addEventListener('pointercancel', ()=> clearTimeout(holdTimer));
+      scoreWrap.addEventListener('pointermove', ()=> clearTimeout(holdTimer));
 
-      nextTargetSpan.textContent = TASK_INVITES_PER_LEVEL; 
-      
-      const canClaimTask = currentLevelProgress >= TASK_INVITES_PER_LEVEL;
-
-      if (canClaimTask) {
-        progressBarContainer.style.display = 'block';
-        progressBar.style.width = '100%';
-        progressText.style.display = 'block';
-        progressText.textContent = `${cumulativeTarget}/${cumulativeTarget}`;
-        claimBtn.style.display = 'inline-block';
-      } else {
-        progressBarContainer.style.display = 'block';
-        progressText.style.display = 'block';
-        claimBtn.style.display = 'none';
-        progressBar.style.width = Math.min(100, percent) + '%';
-        progressText.textContent = `${inviteStats.total}/${cumulativeTarget}`;
-      }
-    }
-
-    function updateBear15TaskProgress(){
-      const totalUsedInvites = bear15TaskLevel * 15; 
-      const cumulativeTarget = totalUsedInvites + 15; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      const percent = (currentLevelProgress / 15) * 100;
-      
-      const progressBarContainer = document.getElementById('taskBear15ProgressBarContainer');
-      const progressBar = document.getElementById('taskBear15ProgressBar');
-      const progressText = document.getElementById('taskBear15ProgressText');
-      const claimBtn = document.getElementById('taskBear15ClaimBtn');
-
-      const canClaimTask = currentLevelProgress >= 15;
-
-      if (canClaimTask) {
-        progressBarContainer.style.display = 'block';
-        progressBar.style.width = '100%';
-        progressText.style.display = 'block';
-        progressText.textContent = `${cumulativeTarget}/${cumulativeTarget}`;
-        claimBtn.style.display = 'inline-block';
-      } else {
-        progressBarContainer.style.display = 'block';
-        progressText.style.display = 'block';
-        claimBtn.style.display = 'none';
-        progressBar.style.width = Math.min(100, percent) + '%';
-        progressText.textContent = `${inviteStats.total}/${cumulativeTarget}`;
-      }
-    }
-
-    function updateBox35TaskProgress(){
-      const totalUsedInvites = box35TaskLevel * 35; 
-      const cumulativeTarget = totalUsedInvites + 35; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      const percent = (currentLevelProgress / 35) * 100;
-      
-      const progressBarContainer = document.getElementById('taskBox35ProgressBarContainer');
-      const progressBar = document.getElementById('taskBox35ProgressBar');
-      const progressText = document.getElementById('taskBox35ProgressText');
-      const claimBtn = document.getElementById('taskBox35ClaimBtn');
-
-      const canClaimTask = currentLevelProgress >= 35;
-
-      if (canClaimTask) {
-        progressBarContainer.style.display = 'block';
-        progressBar.style.width = '100%';
-        progressText.style.display = 'block';
-        progressText.textContent = `${cumulativeTarget}/${cumulativeTarget}`;
-        claimBtn.style.display = 'inline-block';
-      } else {
-        progressBarContainer.style.display = 'block';
-        progressText.style.display = 'block';
-        claimBtn.style.display = 'none';
-        progressBar.style.width = Math.min(100, percent) + '%';
-        progressText.textContent = `${inviteStats.total}/${cumulativeTarget}`;
-      }
-    }
-
-    async function claimBearGift() {
-      if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
-      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
-        return;
-      }
-      
-      const totalUsedInvites = bearTaskLevel * TASK_INVITES_PER_LEVEL; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      
-      if(currentLevelProgress < TASK_INVITES_PER_LEVEL){
-        showToast("You haven't reached the required invites for this task level yet.", 'error');
-        return;
-      }
-
-      const userId = tgUser?.id || 'unknown';
-      const username = getDisplayedUsername();
-
-      // طلب سحب مهمة
-      const res = await fetchApi({ type: 'claim-task', data: { taskId: 'bear', userId } });
-      
-      if (!res.ok) { 
-        const msg = res.data && res.data.message ? res.data.message : 'Claim task failed. Try again later.';
-        showToast(msg, 'error'); 
-        return; 
-      }
-
-      await loadUserState(); 
-      await updateInviteStats(); 
-      
-      showToast('🎁 Bear gift claimed successfully!', 'success');
-      updateTaskProgress(); 
-      closeTaskPage();
-    }
-
-    async function claimBear15Gift() {
-      if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
-      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
-        return;
-      }
-      
-      const totalUsedInvites = bear15TaskLevel * 15; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      
-      if(currentLevelProgress < 15){
-        showToast("You haven't reached the required invites for this task level yet.", 'error');
-        return;
-      }
-
-      const userId = tgUser?.id || 'unknown';
-      const username = getDisplayedUsername();
-
-      // طلب سحب مهمة
-      const res = await fetchApi({ type: 'claim-task', data: { taskId: 'bear15', userId } });
-      
-      if (!res.ok) { 
-        const msg = res.data && res.data.message ? res.data.message : 'Claim task failed. Try again later.';
-        showToast(msg, 'error'); 
-        return; 
-      }
-
-      await loadUserState(); 
-      await updateInviteStats(); 
-      
-      showToast('🎁 Bear gift claimed successfully!', 'success');
-      updateBear15TaskProgress(); 
-      closeTaskPage();
-    }
-
-    async function claimBox35Gift() {
-      if (!nextClaimAllowed()) { showToast(getRemainingTime(), 'error'); return; }
-      if (inviteStats.active < REQUIRED_ACTIVE_INVITES) {
-        showToast(`You need at least ${REQUIRED_ACTIVE_INVITES} active invites (users who watched ${REQUIRED_ADS_TO_ACTIVATE_INVITE}+ ads) to claim.`, 'error', 5000);
-        return;
-      }
-      
-      const totalUsedInvites = box35TaskLevel * 35; 
-      const currentLevelProgress = inviteStats.total - totalUsedInvites; 
-      
-      if(currentLevelProgress < 35){
-        showToast("You haven't reached the required invites for this task level yet.", 'error');
-        return;
-      }
-
-      const userId = tgUser?.id || 'unknown';
-      const username = getDisplayedUsername();
-
-      // طلب سحب مهمة
-      const res = await fetchApi({ type: 'claim-task', data: { taskId: 'box35', userId } });
-      
-      if (!res.ok) { 
-        const msg = res.data && res.data.message ? res.data.message : 'Claim task failed. Try again later.';
-        showToast(msg, 'error'); 
-        return; 
-      }
-
-      await loadUserState(); 
-      await updateInviteStats(); 
-      
-      showToast('🎁 Box gift claimed successfully!', 'success');
-      updateBox35TaskProgress(); 
-      closeTaskPage();
-    }
-
-    /*******************************
-     * تهيئة التطبيق
-     *******************************/
-    async function initApp() {
-      updateUsernameDisplay();
-      
-      // جلب إحصائيات الدعوات والحالة من السيرفر لأول مرة
-      await updateInviteStats();
-      await loadUserState(); 
-      
-      renderGiftsRow();
-      registerUser();
-
-      initVideoVisibilityController();
-      startCircleVideosSequentially();
-
-      bgVideo.style.display = 'block';
-      bgVideo.play().catch(()=>{});
-    }
-
-    async function loadUserState() {
-      const userId = tgUser?.id || 'unknown';
-      const res = await fetchApi({ type: 'get-user-state', data: { userId } });
-      if (res.ok && res.data) {
-        
-        // 1. استرجاع عدد الإعلانات المتبقية
-        if (res.data.ad_views) {
-          Object.keys(giftsData).forEach(key => {
-            const watched = Number(res.data.ad_views[key] || 0);
-            const required = giftsData[key]?.ads || 200;
-            adCounters[key] = Math.max(0, required - watched);
-            canClaim[key] = (adCounters[key] === 0);
-          });
+      window.addEventListener('touchmove', function(e){
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT')) {
+          e.stopPropagation();
         }
-        
-        // 2. استرجاع الهدايا التي حصل عليها
-        if (res.data.claims) {
-          Object.keys(giftsData).forEach(key => {
-             myGifts[key] = Number(res.data.claims[key]?.quantity || 0);
-             myGiftDates[key] = res.data.claims[key]?.last_claim_date || null;
-          });
-        }
-        
-        // 3. استرجاع تاريخ آخر سحب (عام) من السيرفر
-        if (res.data.last_claim_date) {
-          lastClaimDateFromApi = res.data.last_claim_date; // حفظ التاريخ في المتغير الجديد
-          // لا نستخدم localStorage هنا، نعتمد على المتغير
-        } else {
-           lastClaimDateFromApi = null;
-        }
-        
-        // 4. استرجاع مستوى مهمة الدب
-        if (res.data.bear_task_level !== undefined) {
-          bearTaskLevel = Number(res.data.bear_task_level);
-        }
+      }, {passive:true});
 
-        // 5. استرجاع مستويات المهام الإضافية
-        if (res.data.bear15_task_level !== undefined) {
-          bear15TaskLevel = Number(res.data.bear15_task_level);
-        }
-        if (res.data.box35_task_level !== undefined) {
-          box35TaskLevel = Number(res.data.box35_task_level);
-        }
-      }
-    }
-
-    function getRefParam() {
-      if (!tg.initDataUnsafe) return null;
-      const sp = tg.initDataUnsafe.start_param;
-      if (!sp || typeof sp !== 'string') return null;
-      if (sp.startsWith('ref_')) return sp.slice(4);
-      return null;
-    }
-    async function registerUser() {
-      if (!tgUser) return;
-      const ref = getRefParam();
-      const payload = {
-        userId: String(tgUser.id),
-        username: tgUser.username || '',
-        firstName: tgUser.first_name || '',
-        lastName: tgUser.last_name || '',
-        refal_by: ref || 0,
-        initData: tg.initData 
-      };
-      try {
-        const res = await fetchApi({ type: 'register', data: payload });
-        if (res.ok) {
-            console.log('User registered/updated.');
-        } else {
-             console.error('Registration failed:', res.data || res.error);
-        }
-      } catch (e) {
-        console.error('Registration error:', e);
-      }
-    }
-
-    function showGiftToast(giftKey) {
-      const d = giftsData[giftKey];
-      const div = document.createElement('div');
-      div.className = 'gift-toast';
-      div.innerHTML = `
-        <div style="font-size:20px;margin-bottom:8px;color:#fff;">${d.icon} ${d.en} Requirements</div>
-        <div style="font-size:17px;">Watch <b>${d.ads}</b> ads & bring <b>${d.inv}</b> active invites (20+ ads) to claim!</div>
-      `;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 3000);
-    }
-
-    /*******************************
-     * Loader start عند تحميل الصفحة
-     *******************************/
-    window.addEventListener('load', () => {
-      showLoaderThenInit();
-    });
+    })();
   </script>
 </body>
 </html>
